@@ -2,6 +2,8 @@
 using System;
 using System.Windows;
 using MapperGang.Infrastructure.DI;
+using MapperGang.Views;
+using MapperGang.ViewModels;
 
 namespace MapperGang
 {
@@ -19,16 +21,24 @@ namespace MapperGang
 
         private void ConfigureServices(ServiceCollection services)
         {
-            // Регистрация сервисов будет добавлена позже через ContainerConfig
+            // Регистрация сервисов через ContainerConfig
             ContainerConfig.Configure(services);
+
+            // Регистрируем главное окно
+            services.AddSingleton<MainWindow>();
         }
+
 
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
 
-            // Можем перенести инициализацию окна сюда, если хотим 
-            // использовать DI для создания главного окна
+            // Создаем главное окно с использованием DI
+            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+
+            // Устанавливаем главное окно как MainWindow приложения
+            Current.MainWindow = mainWindow;
+            mainWindow.Show();
         }
     }
 }

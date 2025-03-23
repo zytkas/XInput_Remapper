@@ -3,9 +3,6 @@ using System.Windows.Input;
 
 namespace MapperGang.Infrastructure.Commands
 {
-    /// <summary>
-    /// Реализация команд для MVVM-паттерна
-    /// </summary>
     public class RelayCommand : ICommand
     {
         private readonly Action<object> _execute;

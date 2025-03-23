@@ -5,9 +5,7 @@ using MapperGang.Models;
 
 namespace MapperGang.ViewModels
 {
-    /// <summary>
-    /// ViewModel для главного окна приложения
-    /// </summary>
+
     public class MainViewModel : ViewModelBase
     {
         #region Приватные поля
@@ -17,6 +15,9 @@ namespace MapperGang.ViewModels
         private string _deviceType;
         private string _deviceId;
         private string _activeProfile;
+        private double _mouseSensitivity;
+        private double _joystickSensitivity;
+        private ViewModelBase _currentViewModel;
 
         #endregion
 
@@ -28,7 +29,22 @@ namespace MapperGang.ViewModels
         public int SelectedTabIndex
         {
             get => _selectedTabIndex;
-            set => SetProperty(ref _selectedTabIndex, value);
+            set
+            {
+                if (SetProperty(ref _selectedTabIndex, value))
+                {
+                    UpdateCurrentViewModel();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Текущая активная ViewModel
+        /// </summary>
+        public ViewModelBase CurrentViewModel
+        {
+            get => _currentViewModel;
+            set => SetProperty(ref _currentViewModel, value);
         }
 
         /// <summary>
@@ -67,6 +83,25 @@ namespace MapperGang.ViewModels
             set => SetProperty(ref _activeProfile, value);
         }
 
+
+        /// <summary>
+        /// Чувствительность мыши (0-100%)
+        /// </summary>
+        public double MouseSensitivity
+        {
+            get => _mouseSensitivity;
+            set => SetProperty(ref _mouseSensitivity, value);
+        }
+
+        /// <summary>
+        /// Чувствительность джойстика (0-100%)
+        /// </summary>
+        public double JoystickSensitivity
+        {
+            get => _joystickSensitivity;
+            set => SetProperty(ref _joystickSensitivity, value);
+        }
+
         #endregion
 
         #region Команды
@@ -86,24 +121,39 @@ namespace MapperGang.ViewModels
         /// </summary>
         public ICommand SaveSettingsCommand { get; }
 
+        /// <summary>
+        /// Команда навигации
+        /// </summary>
+        public ICommand NavigateCommand { get; }
+
         #endregion
+
+        // Зависимости для навигации
+        private readonly ControllerViewModel _controllerViewModel;
 
         /// <summary>
         /// Конструктор MainViewModel
         /// </summary>
-        public MainViewModel()
+        public MainViewModel(ControllerViewModel controllerViewModel)
         {
+            _controllerViewModel = controllerViewModel;
+
             // Инициализация свойств тестовыми данными
             IsDeviceActive = true;
             DeviceType = "Xbox 360 Controller";
             DeviceId = "VID_045E&PID_028E";
             ActiveProfile = "Default";
             SelectedTabIndex = 0;
-
+            MouseSensitivity = 65;
+            JoystickSensitivity = 80;
             // Инициализация команд
             RestartDeviceCommand = new RelayCommand(OnRestartDevice);
             NewProfileCommand = new RelayCommand(OnNewProfile);
             SaveSettingsCommand = new RelayCommand(OnSaveSettings);
+            NavigateCommand = new RelayCommand(OnNavigate);
+
+            // Установка начального представления
+            UpdateCurrentViewModel();
         }
 
         #region Обработчики команд
@@ -123,6 +173,34 @@ namespace MapperGang.ViewModels
             // На этапе 1 ничего не делаем, просто заглушка
         }
 
+        private void OnNavigate(object parameter)
+        {
+            if (parameter is int tabIndex)
+            {
+                SelectedTabIndex = tabIndex;
+            }
+        }
+
         #endregion
+
+        /// <summary>
+        /// Обновляет текущую ViewModel в зависимости от выбранной вкладки
+        /// </summary>
+        private void UpdateCurrentViewModel()
+        {
+            switch (SelectedTabIndex)
+            {
+                case 0: // Dashboard
+                    CurrentViewModel = this;
+                    break;
+                case 1: // Controller
+                    CurrentViewModel = _controllerViewModel;
+                    break;
+                // Остальные вкладки будут добавлены позже
+                default:
+                    CurrentViewModel = this;
+                    break;
+            }
+        }
     }
 }

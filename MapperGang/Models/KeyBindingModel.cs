@@ -25,9 +25,6 @@
         /// </summary>
         public object Parameters { get; set; }
 
-        /// <summary>
-        /// Описание привязки (например, "Левая кнопка мыши -> A")
-        /// </summary>
         public string Description => $"{InputCode} -> {Action}";
     }
 }

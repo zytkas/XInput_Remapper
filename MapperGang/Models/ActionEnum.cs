@@ -1,8 +1,5 @@
 ﻿namespace MapperGang.Models
 {
-    /// <summary>
-    /// Перечисление доступных действий контроллера
-    /// </summary>
     public enum ControllerAction
     {
         // Кнопки Xbox-контроллера

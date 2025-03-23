@@ -1,21 +1,19 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MapperGang.ViewModels;
+using MapperGang.Views;
 
 namespace MapperGang.Infrastructure.DI
 {
-    /// <summary>
-    /// Конфигурация DI-контейнера приложения
-    /// </summary>
     public static class ContainerConfig
     {
-        /// <summary>
-        /// Регистрирует сервисы в контейнере
-        /// </summary>
         public static void Configure(IServiceCollection services)
         {
-            // Регистрация ViewModels
+            services.AddSingleton<ControllerViewModel>();
+            services.AddSingleton<MouseViewModel>();
+            services.AddSingleton<KeyboardViewModel>();
+            services.AddSingleton<SensitivityViewModel>();
             services.AddSingleton<MainViewModel>();
-
+            services.AddSingleton<MainWindow>();
             // Здесь в будущем будут зарегистрированы:
             // - Сервис ввода (InputService)
             // - Сервис контроллера (ControllerService)

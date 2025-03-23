@@ -3,10 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace MapperGang.ViewModels
 {
-    /// <summary>
-    /// Базовый класс для всех ViewModel, реализующий INotifyPropertyChanged
-    /// для поддержки обновления UI при изменении свойств
-    /// </summary>
     public abstract class ViewModelBase : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;

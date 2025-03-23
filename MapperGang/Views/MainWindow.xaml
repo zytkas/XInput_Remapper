@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:local="clr-namespace:MapperGang.Views"
+        xmlns:viewmodels="clr-namespace:MapperGang.ViewModels"
         mc:Ignorable="d"
         Title="VirtualJoy" Height="650" Width="1000" 
         WindowStartupLocation="CenterScreen"
@@ -14,30 +15,32 @@
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Верхняя панель навигации -->
         <Grid Grid.Row="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-
-            <!-- Вкладки навигации -->
+           
             <StackPanel Grid.Column="0" Orientation="Horizontal">
-                <ui:Button Content="Dashboard" Appearance="Secondary" Margin="0,0,4,0" 
-                          FontWeight="SemiBold" Foreground="#2076FF"/>
-                <ui:Button Content="Controller" Appearance="Secondary" Margin="4,0"/>
-                <ui:Button Content="Mouse" Appearance="Secondary" Margin="4,0"/>
-                <ui:Button Content="Keyboard" Appearance="Secondary" Margin="4,0"/>
-                <ui:Button Content="Sensitivity" Appearance="Secondary" Margin="4,0"/>
-                <ui:Button Content="Settings" Appearance="Secondary" Margin="4,0"/>
+                <ui:Button x:Name="DashboardTab" Content="Dashboard" Tag="0" Click="NavigationButton_Click"
+                      Appearance="Primary" Margin="0,0,4,0" 
+                      FontWeight="SemiBold" Foreground="#2076FF"/>
+                <ui:Button x:Name="ControllerTab" Content="Controller" Tag="1" Click="NavigationButton_Click"
+                      Appearance="Secondary" Margin="4,0"/>
+                <ui:Button x:Name="MouseTab" Content="Mouse" Tag="2" Click="NavigationButton_Click"
+                      Appearance="Secondary" Margin="4,0"/>
+                <ui:Button x:Name="KeyboardTab" Content="Keyboard" Tag="3" Click="NavigationButton_Click"
+                      Appearance="Secondary" Margin="4,0"/>
+                <ui:Button x:Name="SensitivityTab" Content="Sensitivity" Tag="4" Click="NavigationButton_Click"
+                      Appearance="Secondary" Margin="4,0"/>
+                <ui:Button x:Name="SettingsTab" Content="Settings" Tag="5" Click="NavigationButton_Click"
+                      Appearance="Secondary" Margin="4,0"/>
             </StackPanel>
-
-            <!-- Профиль и кнопка Stop -->
+            
             <StackPanel Grid.Column="1" Orientation="Horizontal">
                 <TextBlock Text="Profile:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                 <ComboBox Width="120" SelectedIndex="0" VerticalAlignment="Center">
@@ -50,9 +53,7 @@
                           Margin="16,0,0,0"/>
             </StackPanel>
         </Grid>
-
-        <!-- Основной контент Dashboard -->
-        <Grid Grid.Row="1" Margin="0,16,0,0">
+        <Grid x:Name="DashboardPanel" Grid.Row="1" Margin="0,16,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -172,10 +173,10 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Mouse Sensitivity" Grid.Column="0" Margin="0,0,0,8"/>
-                                <TextBlock Text="65%" Grid.Column="1" Foreground="#2076FF" Margin="0,0,0,8"/>
+                                <TextBlock Text="{Binding MouseSensitivity, StringFormat={}{0:F0}%}" Grid.Column="1" Foreground="#2076FF" Margin="0,0,0,8"/>
                             </Grid>
 
-                            <Slider Grid.Row="1" Value="65" Maximum="100" Minimum="0" Margin="0,0,0,16"/>
+                            <Slider Grid.Row="1" Value="{Binding MouseSensitivity}" Maximum="100" Minimum="0" Margin="0,0,0,16"/>
 
                             <!-- Joystick Sensitivity -->
                             <Grid Grid.Row="2">
@@ -184,10 +185,10 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Text="Joystick Sensitivity" Grid.Column="0" Margin="0,0,0,8"/>
-                                <TextBlock Text="80%" Grid.Column="1" Foreground="#2076FF" Margin="0,0,0,8"/>
+                                <TextBlock Text="{Binding JoystickSensitivity, StringFormat={}{0:F0}%}" Grid.Column="1" Foreground="#2076FF" Margin="0,0,0,8"/>
                             </Grid>
 
-                            <Slider Grid.Row="3" Value="80" Maximum="100" Minimum="0" Margin="0,0,0,16"/>
+                            <Slider Grid.Row="3" Value="{Binding JoystickSensitivity}" Maximum="100" Minimum="0" Margin="0,0,0,16"/>
 
                             <!-- Response Curves -->
                             <Grid Grid.Row="4">
@@ -227,7 +228,8 @@
                 </ui:Card>
             </Grid>
         </Grid>
-        <!-- Футер с информацией и соцсетями -->
+        <ContentControl x:Name="ContentContainer" Grid.Row="1" Margin="0,16,0,0" 
+                    Visibility="Collapsed" />
         <Border Grid.Row="3" Background="#1E1E1E" CornerRadius="8" Padding="16,12" Margin="0,16,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
