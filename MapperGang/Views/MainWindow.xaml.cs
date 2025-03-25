@@ -17,9 +17,9 @@ namespace MapperGang.Views
         private readonly MouseViewModel _mouseViewModel;
         private readonly KeyboardViewModel _keyboardViewModel;
         private readonly SensitivityViewModel _sensitivityViewModel;
-
+        private readonly SettingsViewModel _settingsViewModel;
         public MainWindow(MainViewModel mainViewModel, ControllerViewModel controllerViewModel, MouseViewModel mouseViewModel,
-            KeyboardViewModel keyboardViewModel, SensitivityViewModel sensitivityViewModel)
+            KeyboardViewModel keyboardViewModel, SensitivityViewModel sensitivityViewModel, SettingsViewModel settingsViewModel)
         {
             InitializeComponent();
 
@@ -28,8 +28,11 @@ namespace MapperGang.Views
             _mouseViewModel = mouseViewModel;
             _keyboardViewModel = keyboardViewModel;
             _sensitivityViewModel = sensitivityViewModel;
-            DataContext = _mainViewModel;
             _sensitivityViewModel = sensitivityViewModel;
+            _settingsViewModel = settingsViewModel;
+
+            DataContext = _mainViewModel;
+            _settingsViewModel = settingsViewModel;
         }
 
         private void NavigationButton_Click(object sender, RoutedEventArgs e)
@@ -97,6 +100,10 @@ namespace MapperGang.Views
                     break;
                 case 4: // Sensitivity
                     ContentContainer.Content = new SensitivityView { DataContext = _sensitivityViewModel };
+                    ContentContainer.Visibility = Visibility.Visible;
+                    break;
+                case 5: // Settings
+                    ContentContainer.Content = new SettingsView { DataContext = _settingsViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;
                 default:

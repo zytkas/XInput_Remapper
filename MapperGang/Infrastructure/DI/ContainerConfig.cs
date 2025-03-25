@@ -12,6 +12,7 @@ namespace MapperGang.Infrastructure.DI
             services.AddSingleton<MouseViewModel>();
             services.AddSingleton<KeyboardViewModel>();
             services.AddSingleton<SensitivityViewModel>();
+            services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
             // Здесь в будущем будут зарегистрированы:

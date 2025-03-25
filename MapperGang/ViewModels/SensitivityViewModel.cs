@@ -1,9 +1,14 @@
-﻿using System.Collections.ObjectModel;
+﻿// MapperGang/ViewModels/SensitivityViewModel.cs
 using System.Windows.Input;
 using MapperGang.Infrastructure.Commands;
+using Wpf.Ui.Appearance;
+using Wpf.Ui.Controls;
 
 namespace MapperGang.ViewModels
 {
+    /// <summary>
+    /// ViewModel для вкладки настроек чувствительности
+    /// </summary>
     public class SensitivityViewModel : ViewModelBase
     {
         #region Приватные поля
@@ -29,7 +34,14 @@ namespace MapperGang.ViewModels
         public double MouseXAxisSensitivity
         {
             get => _mouseXAxisSensitivity;
-            set => SetProperty(ref _mouseXAxisSensitivity, value);
+            set
+            {
+                if (SetProperty(ref _mouseXAxisSensitivity, value))
+                {
+                    // Дополнительные вычисления при необходимости
+                    OnPropertyChanged(nameof(MouseSensitivityOverall));
+                }
+            }
         }
 
         /// <summary>
@@ -38,8 +50,19 @@ namespace MapperGang.ViewModels
         public double MouseYAxisSensitivity
         {
             get => _mouseYAxisSensitivity;
-            set => SetProperty(ref _mouseYAxisSensitivity, value);
+            set
+            {
+                if (SetProperty(ref _mouseYAxisSensitivity, value))
+                {
+                    // Дополнительные вычисления при необходимости
+                }
+            }
         }
+
+        /// <summary>
+        /// Общая чувствительность мыши (среднее между X и Y)
+        /// </summary>
+        public double MouseSensitivityOverall => (_mouseXAxisSensitivity + _mouseYAxisSensitivity) / 2;
 
         /// <summary>
         /// Тип кривой отклика мыши (Linear, S-Curve, Custom)
@@ -47,8 +70,35 @@ namespace MapperGang.ViewModels
         public string MouseResponseCurveType
         {
             get => _mouseResponseCurveType;
-            set => SetProperty(ref _mouseResponseCurveType, value);
+            set
+            {
+                if (SetProperty(ref _mouseResponseCurveType, value))
+                {
+                    // Обновляем внешний вид всех кнопок кривых
+                    OnPropertyChanged(nameof(MouseLinearCurveAppearance));
+                    OnPropertyChanged(nameof(MouseSCurveAppearance));
+                    OnPropertyChanged(nameof(MouseCustomCurveAppearance));
+                }
+            }
         }
+
+        /// <summary>
+        /// Appearance для кнопки линейной кривой мыши
+        /// </summary>
+        public ControlAppearance MouseLinearCurveAppearance =>
+            _mouseResponseCurveType == "Linear" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+
+        /// <summary>
+        /// Appearance для кнопки S-кривой мыши
+        /// </summary>
+        public ControlAppearance MouseSCurveAppearance =>
+            _mouseResponseCurveType == "S-Curve" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+
+        /// <summary>
+        /// Appearance для кнопки пользовательской кривой мыши
+        /// </summary>
+        public ControlAppearance MouseCustomCurveAppearance =>
+            _mouseResponseCurveType == "Custom" ? ControlAppearance.Primary : ControlAppearance.Secondary;
 
         /// <summary>
         /// Включено ли ускорение мыши
@@ -66,6 +116,18 @@ namespace MapperGang.ViewModels
         {
             get => _mouseSmoothing;
             set => SetProperty(ref _mouseSmoothing, value);
+        }
+
+        /// <summary>
+        /// Включено ли сглаживание мыши
+        /// </summary>
+        public bool MouseSmoothingEnabled
+        {
+            get => _mouseSmoothing > 0;
+            set
+            {
+                MouseSmoothing = value ? 30 : 0; // Используем 30% по умолчанию при включении
+            }
         }
 
         /// <summary>
@@ -101,8 +163,35 @@ namespace MapperGang.ViewModels
         public string JoystickResponseCurveType
         {
             get => _joystickResponseCurveType;
-            set => SetProperty(ref _joystickResponseCurveType, value);
+            set
+            {
+                if (SetProperty(ref _joystickResponseCurveType, value))
+                {
+                    // Обновляем внешний вид всех кнопок кривых
+                    OnPropertyChanged(nameof(JoystickLinearCurveAppearance));
+                    OnPropertyChanged(nameof(JoystickStepCurveAppearance));
+                    OnPropertyChanged(nameof(JoystickCustomCurveAppearance));
+                }
+            }
         }
+
+        /// <summary>
+        /// Appearance для кнопки линейной кривой джойстика
+        /// </summary>
+        public ControlAppearance JoystickLinearCurveAppearance =>
+            _joystickResponseCurveType == "Linear" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+
+        /// <summary>
+        /// Appearance для кнопки ступенчатой кривой джойстика
+        /// </summary>
+        public ControlAppearance JoystickStepCurveAppearance =>
+            _joystickResponseCurveType == "Step" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+
+        /// <summary>
+        /// Appearance для кнопки пользовательской кривой джойстика
+        /// </summary>
+        public ControlAppearance JoystickCustomCurveAppearance =>
+            _joystickResponseCurveType == "Custom" ? ControlAppearance.Primary : ControlAppearance.Secondary;
 
         /// <summary>
         /// Компенсация мертвой зоны джойстика
@@ -159,6 +248,7 @@ namespace MapperGang.ViewModels
         /// </summary>
         public SensitivityViewModel()
         {
+            // Инициализация свойств мыши
             MouseXAxisSensitivity = 65;
             MouseYAxisSensitivity = 60;
             MouseResponseCurveType = "Linear";

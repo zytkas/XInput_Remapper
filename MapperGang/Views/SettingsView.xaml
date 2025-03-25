@@ -1,0 +1,226 @@
+﻿<UserControl x:Class="MapperGang.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+             xmlns:local="clr-namespace:MapperGang.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="16">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <ui:SymbolIcon Symbol="Settings24" Foreground="#2076FF" Margin="0,0,8,0"/>
+                    <TextBlock Text="Application Settings" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                </StackPanel>
+                <TextBlock Text="Configure general application settings and preferences" 
+                          Foreground="#AAAAAA" Margin="0,0,0,8"/>
+            </StackPanel>
+            <ui:Card Background="#222222">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                        <TextBlock Text="General" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Start with Windows" VerticalAlignment="Center"/>
+                                <TextBlock Text="Launch application when Windows starts" 
+                                           FontSize="12" Foreground="#AAAAAA"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding StartWithWindows}"/>
+                        </Grid>
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Start Minimized" Grid.Column="0"/>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding StartMinimized}"/>
+                        </Grid>
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Minimize to Tray" Grid.Column="0"/>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding MinimizeToTray}"/>
+                        </Grid>
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Show Notifications" Grid.Column="0"/>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding ShowNotifications}"/>
+                        </Grid>
+                        <TextBlock Text="Appearance" FontWeight="SemiBold" Margin="0,16,0,16"/>
+
+                        <TextBlock Text="Theme" Margin="0,0,0,8"/>
+                        <StackPanel>
+                            <RadioButton Content="Light" 
+                                         IsChecked="{Binding IsLightTheme}" 
+                                         GroupName="Theme" 
+                                         Margin="0,4"/>
+                            <RadioButton Content="Dark" 
+                                         IsChecked="{Binding IsDarkTheme}" 
+                                         GroupName="Theme" 
+                                         Margin="0,4"/>
+                            <RadioButton Content="System" 
+                                         IsChecked="{Binding IsSystemTheme}" 
+                                         GroupName="Theme" 
+                                         Margin="0,4"/>
+                        </StackPanel>
+
+                        <TextBlock Text="Accent Color" Margin="0,16,0,8"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Width="24" Height="24" CornerRadius="12" Background="#1E88E5" 
+                                    BorderThickness="2" BorderBrush="White">
+                                <ui:SymbolIcon Symbol="Checkmark24" Foreground="White" Visibility="Visible"/>
+                            </Border>
+                            <Border Margin="4" Width="24" Height="24" CornerRadius="12" Background="#43A047"/>
+                            <Border Margin="4" Width="24" Height="24" CornerRadius="12" Background="#E53935"/>
+                            <Border Margin="4" Width="24" Height="24" CornerRadius="12" Background="#8E24AA"/>
+                            <Border Margin="4" Width="24" Height="24" CornerRadius="12" Background="#F9A825"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                        <TextBlock Text="Profiles" FontWeight="SemiBold" Margin="0,0,0,16"/>
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Auto-Switch Profiles" VerticalAlignment="Center"/>
+                                <TextBlock Text="Automatically switch profiles based on active application" 
+                                           FontSize="12" Foreground="#AAAAAA"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoSwitchProfiles}"/>
+                        </Grid>
+
+                        <TextBlock Text="Default Profile" Margin="0,8,0,8"/>
+                        <ComboBox ItemsSource="{Binding AvailableProfiles}" 
+                                  SelectedItem="{Binding DefaultProfile}"
+                                  Margin="0,0,0,16"/>
+
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Cloud Sync Profiles" VerticalAlignment="Center"/>
+                                <TextBlock Text="Sync profiles across devices using cloud storage" 
+                                           FontSize="12" Foreground="#AAAAAA"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding CloudSyncProfiles}"/>
+                        </Grid>
+
+                        <TextBlock Text="Advanced" FontWeight="SemiBold" Margin="0,16,0,16"/>
+
+                        <Grid Margin="0,8,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Text="Debug Mode" VerticalAlignment="Center"/>
+                                <TextBlock Text="Enable detailed logging for troubleshooting" 
+                                           FontSize="12" Foreground="#AAAAAA"/>
+                            </StackPanel>
+                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding DebugMode}"/>
+                        </Grid>
+
+                        <TextBlock Text="Input Polling Rate" Margin="0,8,0,8"/>
+                        <ComboBox ItemsSource="{Binding AvailablePollingRates}" 
+                                  SelectedItem="{Binding InputPollingRate}"
+                                  Margin="0,0,0,8"/>
+                        <TextBlock Text="Higher values reduce input lag but increase CPU usage" 
+                                   FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,16"/>
+
+                        <TextBlock Text="Process Priority" Margin="0,8,0,8"/>
+                        <ComboBox ItemsSource="{Binding AvailablePriorities}" 
+                                  SelectedItem="{Binding ProcessPriority}"
+                                  Margin="0,0,0,16"/>
+                    </StackPanel>
+                </Grid>
+            </ui:Card>
+
+            <Grid Margin="0,8,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <ui:Button Grid.Column="0" Content="Reset All Settings" 
+                           Appearance="Secondary" Command="{Binding ResetAllSettingsCommand}">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="ArrowReset24"/>
+                    </ui:Button.Icon>
+                </ui:Button>
+
+                <ui:Button Grid.Column="2" Content="Save Settings" 
+                           Appearance="Primary" Command="{Binding SaveSettingsCommand}">
+                    <ui:Button.Icon>
+                        <ui:SymbolIcon Symbol="Save24"/>
+                    </ui:Button.Icon>
+                </ui:Button>
+            </Grid>
+
+            <ui:Card Background="#222222">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <ui:SymbolIcon Symbol="CloudSync24" Foreground="#2076FF" Margin="0,0,8,0"/>
+                        <TextBlock Text="Backup and Restore" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                            <TextBlock Text="Backup Settings" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="Create a backup of all your profiles and settings" 
+                                       Foreground="#AAAAAA" Margin="0,0,0,16"/>
+
+                            <ui:Button Content="Export Settings" 
+                                       HorizontalAlignment="Stretch"
+                                       Command="{Binding ExportSettingsCommand}">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="ArrowExportLtr24"/>
+                                </ui:Button.Icon>
+                            </ui:Button>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                            <TextBlock Text="Restore Settings" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="Restore previously exported settings and profiles" 
+                                       Foreground="#AAAAAA" Margin="0,0,0,16"/>
+
+                            <ui:Button Content="Import Settings" 
+                                       HorizontalAlignment="Stretch"
+                                       Command="{Binding ImportSettingsCommand}">
+                                <ui:Button.Icon>
+                                    <ui:SymbolIcon Symbol="ArrowImport24"/>
+                                </ui:Button.Icon>
+                            </ui:Button>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </ui:Card>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

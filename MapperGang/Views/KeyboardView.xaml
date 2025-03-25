@@ -210,7 +210,7 @@
                                         <ComboBoxItem Content="Guide Button"/>
                                     </ComboBox>
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
                                         <ui:Button Appearance="Transparent" Padding="4" ToolTip="Advanced Settings">
                                             <ui:SymbolIcon Symbol="Settings24" Foreground="#BBBBBB"/>
                                         </ui:Button>
@@ -218,7 +218,7 @@
                                                   Command="{Binding DataContext.RemoveMappingCommand, 
                                                             RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ItemsControl}}}"
                                                   CommandParameter="{Binding}">
-                                            <ui:SymbolIcon Symbol="Delete24" Foreground="#F44336"/>
+                                            <ui:SymbolIcon Symbol="Delete24" Foreground="#F44336" />
                                         </ui:Button>
                                     </StackPanel>
                                 </Grid>

@@ -216,38 +216,6 @@
                     </Grid>
                 </StackPanel>
             </ui:Card>
-
-            <ui:Card Background="#222222">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                        <ui:SymbolIcon Symbol="XboxConsole24" Foreground="#2076FF" Margin="0,0,8,0"/>
-                        <TextBlock Text="Button Mapping" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
-                    </StackPanel>
-
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*"/>
-                            <ColumnDefinition Width="3*"/>
-                            <ColumnDefinition Width="1*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <TextBlock Grid.Column="0" Text="Controller Button" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBlock Grid.Column="1" Text="Current Assignment" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                        <TextBlock Grid.Column="2" Text="Actions" FontWeight="SemiBold" Margin="0,0,0,8"/>
-
-                        <TextBlock Grid.Column="0" Text="A Button" Margin="0,8"/>
-                        <TextBlock Grid.Column="1" Text="Default (A)" Margin="0,8"/>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                            <ui:Button Appearance="Transparent" Padding="4">
-                                <ui:SymbolIcon Symbol="Settings24" Foreground="#BBBBBB"/>
-                            </ui:Button>
-                            <ui:Button Appearance="Transparent" Padding="4">
-                                <ui:SymbolIcon Symbol="Delete24" Foreground="#F44336"/>
-                            </ui:Button>
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </ui:Card>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
