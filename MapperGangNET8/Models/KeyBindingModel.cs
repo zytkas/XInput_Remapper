@@ -1,4 +1,4 @@
-﻿namespace MapperGang.Models
+﻿namespace MapperGangNET8.Models
 {
     /// <summary>
     /// Модель для хранения привязок клавиш к действиям контроллера

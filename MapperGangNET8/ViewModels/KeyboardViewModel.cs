@@ -1,10 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Models;
-using MapperGang.Services.ConfigService;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigResetService;
+using MapperGangNET8.Services.ConfigService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     /// <summary>
     /// ViewModel для вкладки настроек клавиатуры
@@ -306,10 +307,10 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор KeyboardViewModel
         /// </summary>
-        public KeyboardViewModel(IConfigService configService)
+        public KeyboardViewModel(IConfigService configService, IConfigResetService resetService)
         {
             _configService = configService;
-
+            resetService.ConfigurationReset += async (s, e) => await LoadSettingsAsync();
             // Инициализация коллекции маппингов
             ButtonMappings = new ObservableCollection<KeyboardButtonMapping>();
 

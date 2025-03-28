@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace MapperGang.Infrastructure.Commands
+namespace MapperGangNET8.Infrastructure.Commands
 {
     public class RelayCommand : ICommand
     {

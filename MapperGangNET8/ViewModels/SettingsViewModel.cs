@@ -2,12 +2,13 @@
 using System.Windows.Input;
 using System.Threading.Tasks;
 using Microsoft.Win32;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Models;
-using MapperGang.Services.ConfigService;
 using System.Windows;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigService;
+using MapperGangNET8.Services.ConfigResetService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     /// <summary>
     /// ViewModel для вкладки настроек приложения
@@ -16,7 +17,7 @@ namespace MapperGang.ViewModels
     {
         private readonly IConfigService _configService;
         private ConfigModel _currentConfig;
-
+        private readonly IConfigResetService _resetService;
         #region Приватные поля
         private bool _startWithWindows;
         private bool _startMinimized;
@@ -313,25 +314,21 @@ namespace MapperGang.ViewModels
         public ICommand ImportSettingsCommand { get; }
         #endregion
 
-        /// <summary>
-        /// Конструктор SettingsViewModel
-        /// </summary>
-        public SettingsViewModel(IConfigService configService)
+        public SettingsViewModel(IConfigService configService, IConfigResetService resetService)
         {
             _configService = configService;
+            _resetService = resetService;
 
-            // Инициализация коллекций
             AvailableProfiles = new ObservableCollection<string> { "Default", "Game", "Office", "Custom" };
             AvailablePollingRates = new ObservableCollection<string> { "125 Hz", "250 Hz", "500 Hz", "1000 Hz" };
             AvailablePriorities = new ObservableCollection<string> { "Low", "Normal", "High", "RealTime" };
 
-            // Инициализация команд
             ResetAllSettingsCommand = new RelayCommand(async _ => await OnResetAllSettings());
             SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
             ExportSettingsCommand = new RelayCommand(async _ => await OnExportSettings());
             ImportSettingsCommand = new RelayCommand(async _ => await OnImportSettings());
 
-            // Загрузка настроек
+            ResetAllSettingsCommand = new RelayCommand(async _ => await OnResetAllSettings());
             _ = LoadSettings();
         }
 
@@ -379,25 +376,30 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Обработчик команды сброса настроек
         /// </summary>
+        // Modified reset method
         private async Task OnResetAllSettings()
         {
-            // Запрашиваем подтверждение
             MessageBoxResult result = MessageBox.Show(
-                "Вы уверены, что хотите сбросить все настройки к значениям по умолчанию?",
-                "Подтверждение сброса",
+                "Are you sure you want to reset ALL settings to default values?",
+                "Confirm Global Reset",
                 MessageBoxButton.YesNo,
-                MessageBoxImage.Question);
+                MessageBoxImage.Warning);
 
             if (result == MessageBoxResult.Yes)
             {
-                // Сбрасываем конфигурацию
+                // Reset entire configuration
                 _currentConfig = await _configService.ResetConfigAsync();
 
-                // Обновляем свойства
+                // Update local properties
                 UpdatePropertiesFromConfig();
 
-                MessageBox.Show("Настройки успешно сброшены.", "Сброс настроек",
-                               MessageBoxButton.OK, MessageBoxImage.Information);
+                // Notify all ViewModels to reload settings
+                _resetService.NotifyConfigurationReset();
+
+                MessageBox.Show("All settings have been reset to default values.",
+                    "Reset Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
         }
 

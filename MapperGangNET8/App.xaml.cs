@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Windows;
-using MapperGang.Infrastructure.DI;
-using MapperGang.Views;
-using MapperGang.ViewModels;
-using MapperGang.Services.AutoSaveService;
+using MapperGangNET8.Infrastructure.DI;
+using MapperGangNET8.ViewModels;
+using MapperGangNET8.Services.AutoSaveService;
+using MapperGangNET8.Views;
 
-namespace MapperGang
+namespace MapperGangNET8
 {
     public partial class App : Application
     {

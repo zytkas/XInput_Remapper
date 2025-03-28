@@ -1,12 +1,13 @@
 ﻿using System.Windows.Input;
 using System.Threading.Tasks;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Services.ConfigService;
-using MapperGang.Models;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigResetService;
+using MapperGangNET8.Services.ConfigService;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     /// <summary>
     /// ViewModel для вкладки настроек чувствительности
@@ -381,10 +382,10 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор SensitivityViewModel
         /// </summary>
-        public SensitivityViewModel(IConfigService configService)
+        public SensitivityViewModel(IConfigService configService, IConfigResetService resetService)
         {
             _configService = configService;
-
+resetService.ConfigurationReset += async (sender, e) => await LoadSettingsAsync();
             // Инициализация команд
             EditMouseCurveCommand = new RelayCommand(async _ => await OnEditMouseCurve());
             EditJoystickCurveCommand = new RelayCommand(async _ => await OnEditJoystickCurve());

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     public abstract class ViewModelBase : INotifyPropertyChanged
     {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MapperGang.Models
+namespace MapperGangNET8.Models
 {
     /// <summary>
     /// Основная модель конфигурации, содержащая все настройки приложения

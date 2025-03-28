@@ -1,12 +1,12 @@
-﻿namespace MapperGang.Models
+﻿namespace MapperGangNET8.Models
 {
     public enum ControllerAction
     {
 
-        A_Button,
-        B_Button,
-        X_Button,
-        Y_Button,
+        AButton,
+        BButton,
+        XButton,
+        YButton,
 
 
         LeftBumper,
@@ -37,6 +37,6 @@
     {
         Keyboard,
         Mouse,
-        GamepadPassthrough
+        Gamepad
     }
 }

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace MapperGang.Properties {
+namespace MapperGangNET8.Properties {
     using System;
     
     
