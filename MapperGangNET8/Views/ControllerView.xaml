@@ -12,7 +12,7 @@
         <StackPanel Margin="16">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <ui:SymbolIcon Symbol="XboxConsole24" Foreground="#2076FF" Margin="0,0,8,0"/>
+                    <ui:SymbolIcon Symbol="XboxController24" Foreground="#2076FF" Margin="0,0,8,0"/>
                     <TextBlock Text="Controller Settings" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
                 </StackPanel>
                 <TextBlock Text="Configure virtual controller settings and behavior" 

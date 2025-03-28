@@ -159,7 +159,6 @@
                         <TextBlock Grid.Column="1" Text="Controller Button" FontWeight="SemiBold"/>
                         <TextBlock Grid.Column="2" Text="Actions" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     </Grid>
-
                     <ItemsControl ItemsSource="{Binding ButtonMappings}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -170,54 +169,24 @@
                                         <ColumnDefinition Width="1*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <ComboBox Grid.Column="0" SelectedItem="{Binding KeyboardKey}" Margin="0,0,8,0">
-                                        <ComboBoxItem Content="Space"/>
-                                        <ComboBoxItem Content="Left Ctrl"/>
-                                        <ComboBoxItem Content="Left Shift"/>
-                                        <ComboBoxItem Content="Left Alt"/>
-                                        <ComboBoxItem Content="Tab"/>
-                                        <ComboBoxItem Content="Enter"/>
-                                        <ComboBoxItem Content="Esc"/>
-                                        <ComboBoxItem Content="Q"/>
-                                        <ComboBoxItem Content="E"/>
-                                        <ComboBoxItem Content="R"/>
-                                        <ComboBoxItem Content="F"/>
-                                        <ComboBoxItem Content="Z"/>
-                                        <ComboBoxItem Content="X"/>
-                                        <ComboBoxItem Content="C"/>
-                                        <ComboBoxItem Content="1"/>
-                                        <ComboBoxItem Content="2"/>
-                                        <ComboBoxItem Content="3"/>
-                                    </ComboBox>
+                                    <ComboBox Grid.Column="0" 
+                          ItemsSource="{Binding DataContext.AvailableKeyboardKeys, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
+                          SelectedItem="{Binding KeyboardKey}" 
+                          Margin="0,0,8,0"/>
 
-                                    <ComboBox Grid.Column="1" SelectedItem="{Binding ControllerButton}" Margin="8,0">
-                                        <ComboBoxItem Content="A Button"/>
-                                        <ComboBoxItem Content="B Button"/>
-                                        <ComboBoxItem Content="X Button"/>
-                                        <ComboBoxItem Content="Y Button"/>
-                                        <ComboBoxItem Content="Left Bumper"/>
-                                        <ComboBoxItem Content="Right Bumper"/>
-                                        <ComboBoxItem Content="Left Trigger"/>
-                                        <ComboBoxItem Content="Right Trigger"/>
-                                        <ComboBoxItem Content="Left Stick Press"/>
-                                        <ComboBoxItem Content="Right Stick Press"/>
-                                        <ComboBoxItem Content="D-Pad Up"/>
-                                        <ComboBoxItem Content="D-Pad Down"/>
-                                        <ComboBoxItem Content="D-Pad Left"/>
-                                        <ComboBoxItem Content="D-Pad Right"/>
-                                        <ComboBoxItem Content="Start Button"/>
-                                        <ComboBoxItem Content="Back Button"/>
-                                        <ComboBoxItem Content="Guide Button"/>
-                                    </ComboBox>
+                                    <ComboBox Grid.Column="1" 
+                          ItemsSource="{Binding DataContext.AvailableControllerActions, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
+                          SelectedItem="{Binding ControllerButton}" 
+                          Margin="8,0"/>
 
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
                                         <ui:Button Appearance="Transparent" Padding="4" ToolTip="Advanced Settings">
                                             <ui:SymbolIcon Symbol="Settings24" Foreground="#BBBBBB"/>
                                         </ui:Button>
                                         <ui:Button Appearance="Transparent" Padding="4" ToolTip="Remove Mapping"
-                                                  Command="{Binding DataContext.RemoveMappingCommand, 
-                                                            RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ItemsControl}}}"
-                                                  CommandParameter="{Binding}">
+                            Command="{Binding DataContext.RemoveMappingCommand, 
+                                        RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
+                            CommandParameter="{Binding}">
                                             <ui:SymbolIcon Symbol="Delete24" Foreground="#F44336" />
                                         </ui:Button>
                                     </StackPanel>
@@ -234,12 +203,23 @@
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
+                <ui:Button Grid.Column="0" 
+                               Command="{Binding ResetToDefaultsCommand}"
+                               Appearance="Secondary">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowReset24" Margin="0,0,8,0"/>
+                        <TextBlock Text="Reset to default" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ui:Button>
 
-                <ui:Button Grid.Column="0" Content="Reset to Defaults" 
-                           Appearance="Secondary" Command="{Binding ResetToDefaultsCommand}"/>
-
-                <ui:Button Grid.Column="2" Content="Save Mappings" 
-                           Appearance="Primary" Command="{Binding SaveMappingsCommand}"/>
+                <ui:Button Grid.Column="2" 
+                               Command="{Binding SaveMappingsCommand}"
+                               Appearance="Primary">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Save24" Margin="0,0,8,0"/>
+                        <TextBlock Text="Save Settings" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ui:Button>
             </Grid>
         </StackPanel>
     </ScrollViewer>

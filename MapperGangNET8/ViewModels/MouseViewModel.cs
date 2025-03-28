@@ -1,13 +1,19 @@
-﻿// MapperGang/ViewModels/MouseViewModel.cs
+﻿using System.Collections.ObjectModel;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Windows.Input;
+using System.Threading.Tasks;
 using MapperGang.Infrastructure.Commands;
+using MapperGang.Services.ConfigService;
+using MapperGang.Models;
+using System.Linq;
 
 namespace MapperGang.ViewModels
 {
     public class MouseViewModel : ViewModelBase
     {
+        private readonly IConfigService _configService;
+        private ConfigModel _currentConfig;
+
         #region Приватные поля
         private string _mouseJoystickMode;
         private double _mouseSensitivity;
@@ -26,7 +32,18 @@ namespace MapperGang.ViewModels
         public string MouseJoystickMode
         {
             get => _mouseJoystickMode;
-            set => SetProperty(ref _mouseJoystickMode, value);
+            set
+            {
+                if (SetProperty(ref _mouseJoystickMode, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseJoystickMode = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -35,7 +52,18 @@ namespace MapperGang.ViewModels
         public double MouseSensitivity
         {
             get => _mouseSensitivity;
-            set => SetProperty(ref _mouseSensitivity, value);
+            set
+            {
+                if (SetProperty(ref _mouseSensitivity, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseSensitivity = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -44,7 +72,18 @@ namespace MapperGang.ViewModels
         public bool InvertXAxis
         {
             get => _invertXAxis;
-            set => SetProperty(ref _invertXAxis, value);
+            set
+            {
+                if (SetProperty(ref _invertXAxis, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.InvertXAxis = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -53,7 +92,18 @@ namespace MapperGang.ViewModels
         public bool InvertYAxis
         {
             get => _invertYAxis;
-            set => SetProperty(ref _invertYAxis, value);
+            set
+            {
+                if (SetProperty(ref _invertYAxis, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.InvertYAxis = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -62,7 +112,18 @@ namespace MapperGang.ViewModels
         public bool MouseAcceleration
         {
             get => _mouseAcceleration;
-            set => SetProperty(ref _mouseAcceleration, value);
+            set
+            {
+                if (SetProperty(ref _mouseAcceleration, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseAcceleration = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -71,7 +132,18 @@ namespace MapperGang.ViewModels
         public double MouseSmoothing
         {
             get => _mouseSmoothing;
-            set => SetProperty(ref _mouseSmoothing, value);
+            set
+            {
+                if (SetProperty(ref _mouseSmoothing, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseSmoothing = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -80,7 +152,18 @@ namespace MapperGang.ViewModels
         public string MouseWheelMapping
         {
             get => _mouseWheelMapping;
-            set => SetProperty(ref _mouseWheelMapping, value);
+            set
+            {
+                if (SetProperty(ref _mouseWheelMapping, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseWheelMapping = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -91,6 +174,7 @@ namespace MapperGang.ViewModels
             get => _buttonMappings;
             set => SetProperty(ref _buttonMappings, value);
         }
+
         /// <summary>
         /// Список доступных кнопок мыши
         /// </summary>
@@ -157,59 +241,206 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор MouseViewModel
         /// </summary>
-        public MouseViewModel()
+        public MouseViewModel(IConfigService configService)
         {
-            // Инициализация свойств тестовыми данными
-            MouseJoystickMode = "Absolute Position";
-            MouseSensitivity = 65;
-            InvertXAxis = false;
-            InvertYAxis = false;
-            MouseAcceleration = false;
-            MouseSmoothing = 30;
-            MouseWheelMapping = "Right Stick Y-Axis";
+            _configService = configService;
 
             // Инициализация коллекции маппингов
-            ButtonMappings = new ObservableCollection<MouseButtonMapping>
-            {
-                new MouseButtonMapping { MouseButton = "Left Button", ControllerButton = "A Button" },
-                new MouseButtonMapping { MouseButton = "Right Button", ControllerButton = "B Button" },
-                new MouseButtonMapping { MouseButton = "Middle Button", ControllerButton = "X Button" },
-                new MouseButtonMapping { MouseButton = "Side Button 1", ControllerButton = "Left Bumper" },
-                new MouseButtonMapping { MouseButton = "Side Button 2", ControllerButton = "Right Bumper" }
-            };
+            ButtonMappings = new ObservableCollection<MouseButtonMapping>();
 
             // Инициализация команд
-            ResetToDefaultsCommand = new RelayCommand(OnResetToDefaults);
-            SaveMappingsCommand = new RelayCommand(OnSaveMappings);
-            AddMappingCommand = new RelayCommand(OnAddMapping);
+            ResetToDefaultsCommand = new RelayCommand(async _ => await OnResetToDefaults());
+            SaveMappingsCommand = new RelayCommand(async _ => await OnSaveMappings());
+            AddMappingCommand = new RelayCommand(_ => OnAddMapping());
             RemoveMappingCommand = new RelayCommand(OnRemoveMapping);
+
+            // Загрузка настроек
+            _ = LoadSettingsAsync();
+        }
+
+        /// <summary>
+        /// Загрузка настроек
+        /// </summary>
+        private async Task LoadSettingsAsync()
+        {
+            // Загружаем конфигурацию
+            _currentConfig = await _configService.LoadConfigAsync();
+
+            // Отладка загрузки маппингов
+            if (_currentConfig?.MouseSettings?.ButtonMappings != null)
+            {
+                string debug = "Загруженные маппинги мыши:\n";
+                foreach (var mapping in _currentConfig.MouseSettings.ButtonMappings)
+                {
+                    debug += $"{mapping.MouseButton} -> {mapping.ControllerButton}\n";
+                }
+                System.Windows.MessageBox.Show(debug, "Загруженные маппинги мыши");
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("Маппинги мыши не найдены или пусты", "Загруженные маппинги");
+            }
+
+            // Обновляем свойства
+            UpdatePropertiesFromConfig();
+        }
+
+        /// <summary>
+        /// Обновление свойств на основе загруженной конфигурации
+        /// </summary>
+        /// <summary>
+        /// Обновление свойств на основе загруженной конфигурации
+        /// </summary>
+        private void UpdatePropertiesFromConfig()
+        {
+            if (_currentConfig == null) return;
+
+            var mouseSettings = _currentConfig.MouseSettings;
+
+            // Обновляем свойства
+            MouseJoystickMode = mouseSettings.MouseJoystickMode;
+            MouseSensitivity = mouseSettings.MouseSensitivity;
+            InvertXAxis = mouseSettings.InvertXAxis;
+            InvertYAxis = mouseSettings.InvertYAxis;
+            MouseAcceleration = mouseSettings.MouseAcceleration;
+            MouseSmoothing = mouseSettings.MouseSmoothing;
+            MouseWheelMapping = mouseSettings.MouseWheelMapping;
+
+            // Обновляем коллекцию маппингов
+            ButtonMappings.Clear();
+            foreach (var mapping in mouseSettings.ButtonMappings)
+            {
+                // Проверяем, что значения существуют в списках доступных значений
+                string mouseButton = mapping.MouseButton;
+                string controllerButton = mapping.ControllerButton;
+
+                if (!AvailableMouseButtons.Contains(mouseButton))
+                    mouseButton = AvailableMouseButtons.FirstOrDefault() ?? "Left Button";
+
+                if (!AvailableControllerActions.Contains(controllerButton))
+                    controllerButton = AvailableControllerActions.FirstOrDefault() ?? "A Button";
+
+                ButtonMappings.Add(new MouseButtonMapping
+                {
+                    MouseButton = mouseButton,
+                    ControllerButton = controllerButton
+                });
+            }
         }
 
         #region Обработчики команд
-        private void OnResetToDefaults(object parameter)
+        /// <summary>
+        /// Обработчик команды сброса настроек
+        /// </summary>
+        private async Task OnResetToDefaults()
         {
-            // Заглушка для сброса на значения по умолчанию
+            // Сбрасываем настройки на значения по умолчанию
+            MouseSettingsModel defaultSettings = new MouseSettingsModel();
+
+            // Обновляем настройки в текущей конфигурации
+            if (_currentConfig != null)
+            {
+                _currentConfig.MouseSettings = defaultSettings;
+                await SaveSettingsAsync();
+            }
+
+            // Обновляем свойства
+            UpdatePropertiesFromConfig();
+
+            System.Windows.MessageBox.Show("Настройки мыши сброшены к значениям по умолчанию.", "Сброс настроек",
+                          System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
 
-        private void OnSaveMappings(object parameter)
+        /// <summary>
+        /// Обработчик команды сохранения маппингов
+        /// </summary>
+        private async Task OnSaveMappings()
         {
-            // Заглушка для сохранения маппингов
+            // Отладочный вывод
+            string debug = "Сохраняемые маппинги мыши:\n";
+            foreach (var mapping in ButtonMappings)
+            {
+                debug += $"{mapping.MouseButton} -> {mapping.ControllerButton}\n";
+            }
+            System.Windows.MessageBox.Show(debug, "Отладка");
+
+            // Обновляем настройки в текущей конфигурации
+            if (_currentConfig != null)
+            {
+                // Преобразуем ObservableCollection в List
+                _currentConfig.MouseSettings.ButtonMappings = ButtonMappings
+                    .Select(m => new MouseButtonMappingModel
+                    {
+                        MouseButton = m.MouseButton,
+                        ControllerButton = m.ControllerButton
+                    })
+                    .ToList();
+
+                // Сохраняем конфигурацию
+                await SaveSettingsAsync();
+
+                System.Windows.MessageBox.Show("Настройки маппинга мыши успешно сохранены.", "Сохранение настроек",
+                              System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
         }
 
-        private void OnAddMapping(object parameter)
+        /// <summary>
+        /// Обработчик команды добавления нового маппинга
+        /// </summary>
+        private void OnAddMapping()
         {
-            // Добавление нового маппинга
-            ButtonMappings.Add(new MouseButtonMapping { MouseButton = "New Button", ControllerButton = "Select Action" });
+            // Используем первые элементы из наших списков
+            string defaultButton = AvailableMouseButtons.FirstOrDefault() ?? "Left Button";
+            string defaultAction = AvailableControllerActions.FirstOrDefault() ?? "A Button";
+
+            // Добавление нового маппинга с конкретными значениями
+            ButtonMappings.Add(new MouseButtonMapping
+            {
+                MouseButton = defaultButton,
+                ControllerButton = defaultAction
+            });
+
+            // Сохраняем изменения
+            _ = OnSaveMappings();
         }
 
+        /// <summary>
+        /// Обработчик команды удаления маппинга
+        /// </summary>
         private void OnRemoveMapping(object parameter)
         {
             if (parameter is MouseButtonMapping mapping)
             {
                 ButtonMappings.Remove(mapping);
+
+                // Автоматически сохраняем изменения
+                if (_currentConfig != null)
+                {
+                    // Преобразуем ObservableCollection в List
+                    _currentConfig.MouseSettings.ButtonMappings = ButtonMappings
+                        .Select(m => new MouseButtonMappingModel
+                        {
+                            MouseButton = m.MouseButton,
+                            ControllerButton = m.ControllerButton
+                        })
+                        .ToList();
+
+                    _ = SaveSettingsAsync();
+                }
             }
         }
         #endregion
+
+        /// <summary>
+        /// Сохранение настроек
+        /// </summary>
+        private async Task SaveSettingsAsync()
+        {
+            if (_currentConfig == null) return;
+
+            // Сохраняем конфигурацию
+            await _configService.SaveConfigAsync(_currentConfig);
+        }
     }
 
     /// <summary>

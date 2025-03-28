@@ -357,6 +357,31 @@
                     </Grid>
                 </StackPanel>
             </ui:Card>
+
+            <Grid Margin="0,8,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <ui:Button Grid.Column="0" 
+                               Command="{Binding ResetToDefaultsCommand}"
+                               Appearance="Secondary">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="ArrowReset24" Margin="0,0,8,0"/>
+                        <TextBlock Text="Reset to default" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ui:Button>
+
+                <ui:Button Grid.Column="2" 
+                               Command="{Binding SaveMappingsCommand}"
+                               Appearance="Primary">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Symbol="Save24" Margin="0,0,8,0"/>
+                        <TextBlock Text="Save Settings" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </ui:Button>
+            </Grid>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

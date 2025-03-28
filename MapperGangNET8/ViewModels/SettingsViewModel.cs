@@ -1,7 +1,11 @@
-﻿// MapperGang/ViewModels/SettingsViewModel.cs
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
+using System.Threading.Tasks;
+using Microsoft.Win32;
 using MapperGang.Infrastructure.Commands;
+using MapperGang.Models;
+using MapperGang.Services.ConfigService;
+using System.Windows;
 
 namespace MapperGang.ViewModels
 {
@@ -10,6 +14,9 @@ namespace MapperGang.ViewModels
     /// </summary>
     public class SettingsViewModel : ViewModelBase
     {
+        private readonly IConfigService _configService;
+        private ConfigModel _currentConfig;
+
         #region Приватные поля
         private bool _startWithWindows;
         private bool _startMinimized;
@@ -30,21 +37,36 @@ namespace MapperGang.ViewModels
 
         #region Публичные свойства
         /// <summary>
-        /// Запускать приложение вместе с Windows
+        /// Запуск приложения вместе с Windows
         /// </summary>
         public bool StartWithWindows
         {
             get => _startWithWindows;
-            set => SetProperty(ref _startWithWindows, value);
+            set
+            {
+                if (SetProperty(ref _startWithWindows, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.StartWithWindows = value;
+                    UpdateAutoStartRegistry(value);
+                }
+            }
         }
 
         /// <summary>
-        /// Запускать приложение в свернутом виде
+        /// Запуск приложения в свернутом виде
         /// </summary>
         public bool StartMinimized
         {
             get => _startMinimized;
-            set => SetProperty(ref _startMinimized, value);
+            set
+            {
+                if (SetProperty(ref _startMinimized, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.StartMinimized = value;
+                }
+            }
         }
 
         /// <summary>
@@ -53,7 +75,14 @@ namespace MapperGang.ViewModels
         public bool MinimizeToTray
         {
             get => _minimizeToTray;
-            set => SetProperty(ref _minimizeToTray, value);
+            set
+            {
+                if (SetProperty(ref _minimizeToTray, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.MinimizeToTray = value;
+                }
+            }
         }
 
         /// <summary>
@@ -62,7 +91,14 @@ namespace MapperGang.ViewModels
         public bool ShowNotifications
         {
             get => _showNotifications;
-            set => SetProperty(ref _showNotifications, value);
+            set
+            {
+                if (SetProperty(ref _showNotifications, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.ShowNotifications = value;
+                }
+            }
         }
 
         /// <summary>
@@ -71,7 +107,18 @@ namespace MapperGang.ViewModels
         public string Theme
         {
             get => _theme;
-            set => SetProperty(ref _theme, value);
+            set
+            {
+                if (SetProperty(ref _theme, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.Theme = value;
+                    OnPropertyChanged(nameof(IsLightTheme));
+                    OnPropertyChanged(nameof(IsDarkTheme));
+                    OnPropertyChanged(nameof(IsSystemTheme));
+                    ApplyTheme(value);
+                }
+            }
         }
 
         /// <summary>
@@ -80,7 +127,15 @@ namespace MapperGang.ViewModels
         public string AccentColor
         {
             get => _accentColor;
-            set => SetProperty(ref _accentColor, value);
+            set
+            {
+                if (SetProperty(ref _accentColor, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.AccentColor = value;
+                    ApplyAccentColor(value);
+                }
+            }
         }
 
         /// <summary>
@@ -89,7 +144,14 @@ namespace MapperGang.ViewModels
         public bool AutoSwitchProfiles
         {
             get => _autoSwitchProfiles;
-            set => SetProperty(ref _autoSwitchProfiles, value);
+            set
+            {
+                if (SetProperty(ref _autoSwitchProfiles, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.AutoSwitchProfiles = value;
+                }
+            }
         }
 
         /// <summary>
@@ -98,7 +160,14 @@ namespace MapperGang.ViewModels
         public string DefaultProfile
         {
             get => _defaultProfile;
-            set => SetProperty(ref _defaultProfile, value);
+            set
+            {
+                if (SetProperty(ref _defaultProfile, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.DefaultProfile = value;
+                }
+            }
         }
 
         /// <summary>
@@ -107,7 +176,14 @@ namespace MapperGang.ViewModels
         public bool CloudSyncProfiles
         {
             get => _cloudSyncProfiles;
-            set => SetProperty(ref _cloudSyncProfiles, value);
+            set
+            {
+                if (SetProperty(ref _cloudSyncProfiles, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.CloudSyncProfiles = value;
+                }
+            }
         }
 
         /// <summary>
@@ -116,7 +192,14 @@ namespace MapperGang.ViewModels
         public bool DebugMode
         {
             get => _debugMode;
-            set => SetProperty(ref _debugMode, value);
+            set
+            {
+                if (SetProperty(ref _debugMode, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.DebugMode = value;
+                }
+            }
         }
 
         /// <summary>
@@ -125,7 +208,14 @@ namespace MapperGang.ViewModels
         public string InputPollingRate
         {
             get => _inputPollingRate;
-            set => SetProperty(ref _inputPollingRate, value);
+            set
+            {
+                if (SetProperty(ref _inputPollingRate, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.InputPollingRate = value;
+                }
+            }
         }
 
         /// <summary>
@@ -134,7 +224,14 @@ namespace MapperGang.ViewModels
         public string ProcessPriority
         {
             get => _processPriority;
-            set => SetProperty(ref _processPriority, value);
+            set
+            {
+                if (SetProperty(ref _processPriority, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.ProcessPriority = value;
+                }
+            }
         }
 
         /// <summary>
@@ -219,24 +316,9 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор SettingsViewModel
         /// </summary>
-        public SettingsViewModel()
+        public SettingsViewModel(IConfigService configService)
         {
-            // Инициализация свойств стандартными значениями
-            StartWithWindows = true;
-            StartMinimized = false;
-            MinimizeToTray = true;
-            ShowNotifications = true;
-
-            Theme = "Dark";
-            AccentColor = "Blue";
-
-            AutoSwitchProfiles = true;
-            DefaultProfile = "Default";
-            CloudSyncProfiles = false;
-
-            DebugMode = false;
-            InputPollingRate = "1000 Hz";
-            ProcessPriority = "High";
+            _configService = configService;
 
             // Инициализация коллекций
             AvailableProfiles = new ObservableCollection<string> { "Default", "Game", "Office", "Custom" };
@@ -244,31 +326,186 @@ namespace MapperGang.ViewModels
             AvailablePriorities = new ObservableCollection<string> { "Low", "Normal", "High", "RealTime" };
 
             // Инициализация команд
-            ResetAllSettingsCommand = new RelayCommand(OnResetAllSettings);
-            SaveSettingsCommand = new RelayCommand(OnSaveSettings);
-            ExportSettingsCommand = new RelayCommand(OnExportSettings);
-            ImportSettingsCommand = new RelayCommand(OnImportSettings);
+            ResetAllSettingsCommand = new RelayCommand(async _ => await OnResetAllSettings());
+            SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
+            ExportSettingsCommand = new RelayCommand(async _ => await OnExportSettings());
+            ImportSettingsCommand = new RelayCommand(async _ => await OnImportSettings());
+
+            // Загрузка настроек
+            _ = LoadSettings();
+        }
+
+        /// <summary>
+        /// Загрузка настроек
+        /// </summary>
+        private async Task LoadSettings()
+        {
+            // Загружаем конфигурацию
+            _currentConfig = await _configService.LoadConfigAsync();
+
+            // Обновляем свойства
+            UpdatePropertiesFromConfig();
+        }
+
+        /// <summary>
+        /// Обновление свойств на основе загруженной конфигурации
+        /// </summary>
+        private void UpdatePropertiesFromConfig()
+        {
+            var appSettings = _currentConfig.AppSettings;
+
+            // Обновляем свойства
+            StartWithWindows = appSettings.StartWithWindows;
+            StartMinimized = appSettings.StartMinimized;
+            MinimizeToTray = appSettings.MinimizeToTray;
+            ShowNotifications = appSettings.ShowNotifications;
+            Theme = appSettings.Theme;
+            AccentColor = appSettings.AccentColor;
+            AutoSwitchProfiles = appSettings.AutoSwitchProfiles;
+            DefaultProfile = appSettings.DefaultProfile;
+            CloudSyncProfiles = appSettings.CloudSyncProfiles;
+            DebugMode = appSettings.DebugMode;
+            InputPollingRate = appSettings.InputPollingRate;
+            ProcessPriority = appSettings.ProcessPriority;
+
+            // Проверяем, есть ли профиль по умолчанию в списке доступных профилей
+            if (!AvailableProfiles.Contains(DefaultProfile))
+            {
+                AvailableProfiles.Add(DefaultProfile);
+            }
         }
 
         #region Обработчики команд
-        private void OnResetAllSettings(object parameter)
+        /// <summary>
+        /// Обработчик команды сброса настроек
+        /// </summary>
+        private async Task OnResetAllSettings()
         {
-            // Заглушка для сброса настроек
+            // Запрашиваем подтверждение
+            MessageBoxResult result = MessageBox.Show(
+                "Вы уверены, что хотите сбросить все настройки к значениям по умолчанию?",
+                "Подтверждение сброса",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                // Сбрасываем конфигурацию
+                _currentConfig = await _configService.ResetConfigAsync();
+
+                // Обновляем свойства
+                UpdatePropertiesFromConfig();
+
+                MessageBox.Show("Настройки успешно сброшены.", "Сброс настроек",
+                               MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
-        private void OnSaveSettings(object parameter)
+        /// <summary>
+        /// Обработчик команды сохранения настроек
+        /// </summary>
+        private async Task OnSaveSettings()
         {
-            // Заглушка для сохранения настроек
+            // Сохраняем конфигурацию
+            await _configService.SaveConfigAsync(_currentConfig);
+
+            MessageBox.Show("Настройки успешно сохранены.", "Сохранение настроек",
+                          MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void OnExportSettings(object parameter)
+        /// <summary>
+        /// Обработчик команды экспорта настроек
+        /// </summary>
+        private async Task OnExportSettings()
         {
-            // Заглушка для экспорта настроек
+            // Создаем диалог сохранения файла
+            SaveFileDialog saveFileDialog = new SaveFileDialog
+            {
+                Filter = "JSON файлы (*.json)|*.json",
+                Title = "Экспорт настроек",
+                FileName = "mapper_gang_config.json"
+            };
+
+            // Если пользователь выбрал файл, экспортируем настройки
+            if (saveFileDialog.ShowDialog() == true)
+            {
+                await _configService.ExportConfigAsync(_currentConfig, saveFileDialog.FileName);
+            }
         }
 
-        private void OnImportSettings(object parameter)
+        /// <summary>
+        /// Обработчик команды импорта настроек
+        /// </summary>
+        private async Task OnImportSettings()
         {
-            // Заглушка для импорта настроек
+            // Создаем диалог открытия файла
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "JSON файлы (*.json)|*.json",
+                Title = "Импорт настроек"
+            };
+
+            // Если пользователь выбрал файл, импортируем настройки
+            if (openFileDialog.ShowDialog() == true)
+            {
+                _currentConfig = await _configService.ImportConfigAsync(openFileDialog.FileName);
+                UpdatePropertiesFromConfig();
+            }
+        }
+        #endregion
+
+        #region Вспомогательные методы
+        /// <summary>
+        /// Обновление записи автозапуска в реестре Windows
+        /// </summary>
+        private void UpdateAutoStartRegistry(bool enable)
+        {
+            try
+            {
+                // Открываем раздел реестра для автозапуска
+                using (RegistryKey key = Registry.CurrentUser.OpenSubKey(
+                    "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+                {
+                    if (key != null)
+                    {
+                        if (enable)
+                        {
+                            // Получаем путь к исполняемому файлу приложения
+                            string appPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                            key.SetValue("MapperGang", appPath);
+                        }
+                        else
+                        {
+                            // Удаляем запись из реестра
+                            if (key.GetValue("MapperGang") != null)
+                            {
+                                key.DeleteValue("MapperGang", false);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show($"Ошибка при обновлении автозапуска: {ex.Message}", "Ошибка",
+                               MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Применение темы
+        /// </summary>
+        private void ApplyTheme(string theme)
+        {
+            // В будущем здесь будет реализована логика изменения темы
+        }
+
+        /// <summary>
+        /// Применение цвета акцента
+        /// </summary>
+        private void ApplyAccentColor(string accentColor)
+        {
+            // В будущем здесь будет реализована логика изменения цвета акцента
         }
         #endregion
     }

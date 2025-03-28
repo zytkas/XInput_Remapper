@@ -1,16 +1,21 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
+using System.Threading.Tasks;
 using MapperGang.Infrastructure.Commands;
 using MapperGang.Models;
+using MapperGang.Services.ConfigService;
+using MapperGang.Services.ProfileService;
+using System.Windows;
 
 namespace MapperGang.ViewModels
 {
-
     public class MainViewModel : ViewModelBase
     {
-        #region Приватные поля
+        private readonly IConfigService _configService;
+        private readonly IProfileService _profileService;
+        private ConfigModel _currentConfig;
 
-        private int _selectedTabIndex;
+        #region Приватные поля
         private bool _isDeviceActive;
         private string _deviceType;
         private string _deviceId;
@@ -18,25 +23,10 @@ namespace MapperGang.ViewModels
         private double _mouseSensitivity;
         private double _joystickSensitivity;
         private ViewModelBase _currentViewModel;
-
+        private ObservableCollection<string> _availableProfiles;
         #endregion
 
         #region Публичные свойства
-
-        /// <summary>
-        /// Индекс выбранной вкладки
-        /// </summary>
-        public int SelectedTabIndex
-        {
-            get => _selectedTabIndex;
-            set
-            {
-                if (SetProperty(ref _selectedTabIndex, value))
-                {
-                    UpdateCurrentViewModel();
-                }
-            }
-        }
 
         /// <summary>
         /// Текущая активная ViewModel
@@ -80,9 +70,23 @@ namespace MapperGang.ViewModels
         public string ActiveProfile
         {
             get => _activeProfile;
-            set => SetProperty(ref _activeProfile, value);
+            set
+            {
+                if (SetProperty(ref _activeProfile, value))
+                {
+                    _ = SwitchProfileAsync(value);
+                }
+            }
         }
 
+        /// <summary>
+        /// Доступные профили
+        /// </summary>
+        public ObservableCollection<string> AvailableProfiles
+        {
+            get => _availableProfiles;
+            set => SetProperty(ref _availableProfiles, value);
+        }
 
         /// <summary>
         /// Чувствительность мыши (0-100%)
@@ -90,7 +94,21 @@ namespace MapperGang.ViewModels
         public double MouseSensitivity
         {
             get => _mouseSensitivity;
-            set => SetProperty(ref _mouseSensitivity, value);
+            set
+            {
+                if (SetProperty(ref _mouseSensitivity, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.SensitivitySettings.MouseXAxisSensitivity = value;
+                        _currentConfig.SensitivitySettings.MouseYAxisSensitivity = value;
+
+                        // Автоматически сохраняем настройки
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -99,13 +117,24 @@ namespace MapperGang.ViewModels
         public double JoystickSensitivity
         {
             get => _joystickSensitivity;
-            set => SetProperty(ref _joystickSensitivity, value);
-        }
+            set
+            {
+                if (SetProperty(ref _joystickSensitivity, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.SensitivitySettings.JoystickSensitivity = value;
 
+                        // Автоматически сохраняем настройки
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
         #endregion
 
         #region Команды
-
         /// <summary>
         /// Команда перезапуска устройства
         /// </summary>
@@ -125,7 +154,6 @@ namespace MapperGang.ViewModels
         /// Команда навигации
         /// </summary>
         public ICommand NavigateCommand { get; }
-
         #endregion
 
         // Зависимости для навигации
@@ -134,73 +162,148 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор MainViewModel
         /// </summary>
-        public MainViewModel(ControllerViewModel controllerViewModel)
+        public MainViewModel(ControllerViewModel controllerViewModel,
+                            IConfigService configService,
+                            IProfileService profileService)
         {
             _controllerViewModel = controllerViewModel;
+            _configService = configService;
+            _profileService = profileService;
 
-            // Инициализация свойств тестовыми данными
-            IsDeviceActive = true;
-            DeviceType = "Xbox 360 Controller";
-            DeviceId = "VID_045E&PID_028E";
-            ActiveProfile = "Default";
-            SelectedTabIndex = 0;
-            MouseSensitivity = 65;
-            JoystickSensitivity = 80;
+            // Инициализация свойств по умолчанию
+            AvailableProfiles = new ObservableCollection<string>();
+
             // Инициализация команд
-            RestartDeviceCommand = new RelayCommand(OnRestartDevice);
-            NewProfileCommand = new RelayCommand(OnNewProfile);
-            SaveSettingsCommand = new RelayCommand(OnSaveSettings);
-            NavigateCommand = new RelayCommand(OnNavigate);
+            RestartDeviceCommand = new RelayCommand(async _ => await OnRestartDevice());
+            NewProfileCommand = new RelayCommand(async _ => await OnNewProfile());
+            SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
+            //NavigateCommand = new RelayCommand(OnNavigate);
 
-            // Установка начального представления
-            UpdateCurrentViewModel();
+            // Загрузка настроек и профилей
+            _ = InitializeAsync();
+        }
+
+        /// <summary>
+        /// Асинхронная инициализация
+        /// </summary>
+        private async Task InitializeAsync()
+        {
+            // Загружаем конфигурацию
+            _currentConfig = await _configService.LoadConfigAsync();
+
+            // Загружаем список профилей
+            var profiles = await _profileService.GetProfilesAsync();
+            AvailableProfiles.Clear();
+            foreach (var profile in profiles)
+            {
+                AvailableProfiles.Add(profile);
+            }
+
+            // Получаем активный профиль
+            string activeProfileName = await _profileService.GetActiveProfileNameAsync();
+            ActiveProfile = activeProfileName;
+
+            // Обновляем свойства
+            UpdatePropertiesFromConfig();
+        }
+
+        /// <summary>
+        /// Обновление свойств на основе загруженной конфигурации
+        /// </summary>
+        private void UpdatePropertiesFromConfig()
+        {
+            if (_currentConfig == null) return;
+
+            // Базовые свойства
+            DeviceType = _currentConfig.ControllerSettings.SelectedControllerType;
+            DeviceId = "VID_045E&PID_028E"; // Пример идентификатора Xbox-контроллера
+            IsDeviceActive = true; // По умолчанию устройство активно
+
+            // Настройки чувствительности
+            MouseSensitivity = _currentConfig.SensitivitySettings.MouseXAxisSensitivity;
+            JoystickSensitivity = _currentConfig.SensitivitySettings.JoystickSensitivity;
         }
 
         #region Обработчики команд
-
-        private void OnRestartDevice(object parameter)
+        /// <summary>
+        /// Обработчик команды перезапуска устройства
+        /// </summary>
+        private async Task OnRestartDevice()
         {
-            // На этапе 1 ничего не делаем, просто заглушка
+            // Здесь будет реализация перезапуска виртуального устройства
+            // На данном этапе просто сообщим пользователю
+            MessageBox.Show("Функция перезапуска устройства будет реализована в будущих версиях.",
+                          "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
-        private void OnNewProfile(object parameter)
+        /// <summary>
+        /// Обработчик команды создания нового профиля
+        /// </summary>
+        private async Task OnNewProfile()
         {
-            // На этапе 1 ничего не делаем, просто заглушка
-        }
+            // Создаем диалог для ввода имени профиля
+            // Простая реализация с использованием MessageBox.Show
+            string defaultName = "Новый профиль";
 
-        private void OnSaveSettings(object parameter)
-        {
-            // На этапе 1 ничего не делаем, просто заглушка
-        }
+            // В реальном приложении здесь будет использоваться кастомный диалог
+            string profileName = Microsoft.VisualBasic.Interaction.InputBox(
+                "Введите имя нового профиля:", "Создание профиля", defaultName);
 
-        private void OnNavigate(object parameter)
-        {
-            if (parameter is int tabIndex)
+            if (!string.IsNullOrWhiteSpace(profileName))
             {
-                SelectedTabIndex = tabIndex;
+                // Создаем новый профиль
+                await _profileService.CreateProfileAsync(profileName, "Пользовательский профиль");
+
+                // Обновляем список доступных профилей
+                var profiles = await _profileService.GetProfilesAsync();
+                AvailableProfiles.Clear();
+                foreach (var profile in profiles)
+                {
+                    AvailableProfiles.Add(profile);
+                }
+
+                // Переключаемся на новый профиль
+                ActiveProfile = profileName;
             }
+        }
+
+        /// <summary>
+        /// Обработчик команды сохранения настроек
+        /// </summary>
+        private async Task OnSaveSettings()
+        {
+            await SaveSettingsAsync();
+            MessageBox.Show("Настройки успешно сохранены.", "Сохранение настроек",
+                          MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         #endregion
 
         /// <summary>
-        /// Обновляет текущую ViewModel в зависимости от выбранной вкладки
+        /// Сохранение настроек
         /// </summary>
-        private void UpdateCurrentViewModel()
+        private async Task SaveSettingsAsync()
         {
-            switch (SelectedTabIndex)
-            {
-                case 0: // Dashboard
-                    CurrentViewModel = this;
-                    break;
-                case 1: // Controller
-                    CurrentViewModel = _controllerViewModel;
-                    break;
-                // Остальные вкладки будут добавлены позже
-                default:
-                    CurrentViewModel = this;
-                    break;
-            }
+            if (_currentConfig == null) return;
+
+            // Сохраняем конфигурацию
+            await _configService.SaveConfigAsync(_currentConfig);
         }
-    }
+
+        /// <summary>
+        /// Переключение профиля
+        /// </summary>
+        private async Task SwitchProfileAsync(string profileName)
+        {
+            if (string.IsNullOrWhiteSpace(profileName)) return;
+
+            // Переключаемся на выбранный профиль
+            await _profileService.SwitchToProfileAsync(profileName);
+
+            // Обновляем настройки
+            _currentConfig = await _configService.LoadConfigAsync();
+            UpdatePropertiesFromConfig();
+        }
+
+    } 
 }

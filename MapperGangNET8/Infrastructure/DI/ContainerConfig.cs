@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MapperGang.ViewModels;
 using MapperGang.Views;
+using MapperGang.Services.ConfigService;
+using MapperGang.Services.ProfileService;
+using MapperGang.Services.AutoSaveService;
 
 namespace MapperGang.Infrastructure.DI
 {
@@ -8,6 +11,11 @@ namespace MapperGang.Infrastructure.DI
     {
         public static void Configure(IServiceCollection services)
         {
+            services.AddSingleton<IConfigService, FileConfigService>();
+            services.AddSingleton<IProfileService, ProfileService>();
+            services.AddSingleton<AutoSaveService>();
+
+            //VM
             services.AddSingleton<ControllerViewModel>();
             services.AddSingleton<MouseViewModel>();
             services.AddSingleton<KeyboardViewModel>();
@@ -15,11 +23,6 @@ namespace MapperGang.Infrastructure.DI
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<MainViewModel>();
             services.AddSingleton<MainWindow>();
-            // Здесь в будущем будут зарегистрированы:
-            // - Сервис ввода (InputService)
-            // - Сервис контроллера (ControllerService)
-            // - Сервис настроек (SettingsService)
-            // и другие сервисы
         }
     }
 }

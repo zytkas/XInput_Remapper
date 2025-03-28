@@ -15,9 +15,6 @@ using System.Windows.Shapes;
 
 namespace MapperGang.Views
 {
-    /// <summary>
-    /// Interaction logic for MouseView.xaml
-    /// </summary>
     public partial class MouseView : UserControl
     {
         public MouseView()

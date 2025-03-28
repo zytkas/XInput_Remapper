@@ -1,15 +1,17 @@
-﻿
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
+using System.Threading.Tasks;
 using MapperGang.Infrastructure.Commands;
+using MapperGang.Services.ConfigService;
+using MapperGang.Models;
 
 namespace MapperGang.ViewModels
 {
-    /// <summary>
-    /// ViewModel для вкладки настроек контроллера
-    /// </summary>
     public class ControllerViewModel : ViewModelBase
     {
+        private readonly IConfigService _configService;
+        private ConfigModel _currentConfig;
+
         #region Приватные поля
         private string _selectedControllerType;
         private string _controllerNumber;
@@ -32,7 +34,18 @@ namespace MapperGang.ViewModels
         public string SelectedControllerType
         {
             get => _selectedControllerType;
-            set => SetProperty(ref _selectedControllerType, value);
+            set
+            {
+                if (SetProperty(ref _selectedControllerType, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.SelectedControllerType = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -41,7 +54,18 @@ namespace MapperGang.ViewModels
         public string ControllerNumber
         {
             get => _controllerNumber;
-            set => SetProperty(ref _controllerNumber, value);
+            set
+            {
+                if (SetProperty(ref _controllerNumber, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.ControllerNumber = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -50,7 +74,18 @@ namespace MapperGang.ViewModels
         public bool VibrationEnabled
         {
             get => _vibrationEnabled;
-            set => SetProperty(ref _vibrationEnabled, value);
+            set
+            {
+                if (SetProperty(ref _vibrationEnabled, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.VibrationEnabled = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -59,7 +94,18 @@ namespace MapperGang.ViewModels
         public double VibrationStrength
         {
             get => _vibrationStrength;
-            set => SetProperty(ref _vibrationStrength, value);
+            set
+            {
+                if (SetProperty(ref _vibrationStrength, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.VibrationStrength = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -68,7 +114,18 @@ namespace MapperGang.ViewModels
         public double ButtonPressureSensitivity
         {
             get => _buttonPressureSensitivity;
-            set => SetProperty(ref _buttonPressureSensitivity, value);
+            set
+            {
+                if (SetProperty(ref _buttonPressureSensitivity, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.ButtonPressureSensitivity = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -77,7 +134,18 @@ namespace MapperGang.ViewModels
         public double TriggerDeadzone
         {
             get => _triggerDeadzone;
-            set => SetProperty(ref _triggerDeadzone, value);
+            set
+            {
+                if (SetProperty(ref _triggerDeadzone, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.TriggerDeadzone = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -86,7 +154,18 @@ namespace MapperGang.ViewModels
         public bool HidePhysicalControllers
         {
             get => _hidePhysicalControllers;
-            set => SetProperty(ref _hidePhysicalControllers, value);
+            set
+            {
+                if (SetProperty(ref _hidePhysicalControllers, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.HidePhysicalControllers = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -95,7 +174,18 @@ namespace MapperGang.ViewModels
         public bool ExclusiveMode
         {
             get => _exclusiveMode;
-            set => SetProperty(ref _exclusiveMode, value);
+            set
+            {
+                if (SetProperty(ref _exclusiveMode, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.ExclusiveMode = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -104,7 +194,18 @@ namespace MapperGang.ViewModels
         public bool PassThroughMode
         {
             get => _passThroughMode;
-            set => SetProperty(ref _passThroughMode, value);
+            set
+            {
+                if (SetProperty(ref _passThroughMode, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.PassThroughMode = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -113,7 +214,18 @@ namespace MapperGang.ViewModels
         public bool CombineInputs
         {
             get => _combineInputs;
-            set => SetProperty(ref _combineInputs, value);
+            set
+            {
+                if (SetProperty(ref _combineInputs, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.CombineInputs = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -122,7 +234,18 @@ namespace MapperGang.ViewModels
         public bool AutoConnect
         {
             get => _autoConnect;
-            set => SetProperty(ref _autoConnect, value);
+            set
+            {
+                if (SetProperty(ref _autoConnect, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.AutoConnect = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -131,7 +254,18 @@ namespace MapperGang.ViewModels
         public string ButtonAssignmentMode
         {
             get => _buttonAssignmentMode;
-            set => SetProperty(ref _buttonAssignmentMode, value);
+            set
+            {
+                if (SetProperty(ref _buttonAssignmentMode, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.ControllerSettings.ButtonAssignmentMode = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
         #endregion
 
@@ -147,40 +281,76 @@ namespace MapperGang.ViewModels
         public ICommand SaveSettingsCommand { get; }
         #endregion
 
-        /// <summary>
-        /// Конструктор ControllerViewModel
-        /// </summary>
-        public ControllerViewModel()
+        public ControllerViewModel(IConfigService configService)
         {
-            // Инициализация свойств тестовыми данными
-            SelectedControllerType = "Xbox 360 Controller";
-            ControllerNumber = "Controller 1";
-            VibrationEnabled = true;
-            VibrationStrength = 80;
-            ButtonPressureSensitivity = 75;
-            TriggerDeadzone = 10;
-            HidePhysicalControllers = false;
-            ExclusiveMode = true;
-            PassThroughMode = false;
-            CombineInputs = false;
-            AutoConnect = true;
-            ButtonAssignmentMode = "Standard";
+            _configService = configService;
+            RestartDeviceCommand = new RelayCommand(async _ => await OnRestartDevice());
+            SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
+            _ = LoadSettingsAsync();
+        }
 
-            // Инициализация команд
-            RestartDeviceCommand = new RelayCommand(OnRestartDevice);
-            SaveSettingsCommand = new RelayCommand(OnSaveSettings);
+
+        private async Task LoadSettingsAsync()
+        {
+            _currentConfig = await _configService.LoadConfigAsync();
+            UpdatePropertiesFromConfig();
+        }
+
+        /// <summary>
+        /// Обновление свойств на основе загруженной конфигурации
+        /// </summary>
+        private void UpdatePropertiesFromConfig()
+        {
+            if (_currentConfig == null) return;
+
+            var controllerSettings = _currentConfig.ControllerSettings;
+
+            SelectedControllerType = controllerSettings.SelectedControllerType;
+            ControllerNumber = controllerSettings.ControllerNumber;
+            VibrationEnabled = controllerSettings.VibrationEnabled;
+            VibrationStrength = controllerSettings.VibrationStrength;
+            ButtonPressureSensitivity = controllerSettings.ButtonPressureSensitivity;
+            TriggerDeadzone = controllerSettings.TriggerDeadzone;
+            HidePhysicalControllers = controllerSettings.HidePhysicalControllers;
+            ExclusiveMode = controllerSettings.ExclusiveMode;
+            PassThroughMode = controllerSettings.PassThroughMode;
+            CombineInputs = controllerSettings.CombineInputs;
+            AutoConnect = controllerSettings.AutoConnect;
+            ButtonAssignmentMode = controllerSettings.ButtonAssignmentMode;
         }
 
         #region Обработчики команд
-        private void OnRestartDevice(object parameter)
+        /// <summary>
+        /// Обработчик команды перезапуска устройства
+        /// </summary>
+        private async Task OnRestartDevice()
         {
-            // Заглушка для перезапуска устройства
+            // Здесь будет реализация перезапуска виртуального устройства
+            // На данном этапе просто сообщим пользователю
+            System.Windows.MessageBox.Show("Функция перезапуска устройства будет реализована в будущих версиях.",
+                          "Информация", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
 
-        private void OnSaveSettings(object parameter)
+        /// <summary>
+        /// Обработчик команды сохранения настроек
+        /// </summary>
+        private async Task OnSaveSettings()
         {
-            // Заглушка для сохранения настроек
+            await SaveSettingsAsync();
+            System.Windows.MessageBox.Show("Настройки успешно сохранены.", "Сохранение настроек",
+                          System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
         #endregion
+
+        /// <summary>
+        /// Сохранение настроек
+        /// </summary>
+        private async Task SaveSettingsAsync()
+        {
+            if (_currentConfig == null) return;
+
+            // Сохраняем конфигурацию
+            await _configService.SaveConfigAsync(_currentConfig);
+        }
     }
 }

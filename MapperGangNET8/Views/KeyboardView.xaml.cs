@@ -15,9 +15,6 @@ using System.Windows.Shapes;
 
 namespace MapperGang.Views
 {
-    /// <summary>
-    /// Interaction logic for KeyboardView.xaml
-    /// </summary>
     public partial class KeyboardView : UserControl
     {
         public KeyboardView()

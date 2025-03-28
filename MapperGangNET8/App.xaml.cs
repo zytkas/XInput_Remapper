@@ -4,27 +4,28 @@ using System.Windows;
 using MapperGang.Infrastructure.DI;
 using MapperGang.Views;
 using MapperGang.ViewModels;
+using MapperGang.Services.AutoSaveService;
 
 namespace MapperGang
 {
     public partial class App : Application
     {
         private ServiceProvider _serviceProvider;
+        private AutoSaveService _autoSaveService;
 
         public App()
         {
-            // Настраиваем DI-контейнер
             var services = new ServiceCollection();
             ConfigureServices(services);
             _serviceProvider = services.BuildServiceProvider();
+
+            _autoSaveService = _serviceProvider.GetRequiredService<AutoSaveService>();  
         }
 
         private void ConfigureServices(ServiceCollection services)
         {
-            // Регистрация сервисов через ContainerConfig
             ContainerConfig.Configure(services);
 
-            // Регистрируем главное окно
             services.AddSingleton<MainWindow>();
         }
 
@@ -33,12 +34,17 @@ namespace MapperGang
         {
             base.OnStartup(e);
 
-            // Создаем главное окно с использованием DI
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
 
-            // Устанавливаем главное окно как MainWindow приложения
             Current.MainWindow = mainWindow;
             mainWindow.Show();
+        }
+
+        protected override void OnExit(ExitEventArgs e)
+        {
+            _autoSaveService?.Dispose();
+            _serviceProvider?.Dispose();
+            base.OnExit(e);
         }
     }
 }

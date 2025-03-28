@@ -15,9 +15,6 @@ using System.Windows.Shapes;
 
 namespace MapperGang.Views
 {
-    /// <summary>
-    /// Interaction logic for SensitivityView.xaml
-    /// </summary>
     public partial class SensitivityView : UserControl
     {
         public SensitivityView()

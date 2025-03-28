@@ -1,7 +1,8 @@
-﻿// MapperGang/ViewModels/KeyboardViewModel.cs
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using MapperGang.Infrastructure.Commands;
+using MapperGang.Models;
+using MapperGang.Services.ConfigService;
 
 namespace MapperGang.ViewModels
 {
@@ -10,6 +11,9 @@ namespace MapperGang.ViewModels
     /// </summary>
     public class KeyboardViewModel : ViewModelBase
     {
+        private readonly IConfigService _configService;
+        private ConfigModel _currentConfig;
+
         #region Приватные поля
         private string _keyboardLayout;
         private bool _keyRepeatEnabled;
@@ -31,7 +35,18 @@ namespace MapperGang.ViewModels
         public string KeyboardLayout
         {
             get => _keyboardLayout;
-            set => SetProperty(ref _keyboardLayout, value);
+            set
+            {
+                if (SetProperty(ref _keyboardLayout, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.KeyboardLayout = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -40,7 +55,17 @@ namespace MapperGang.ViewModels
         public bool KeyRepeatEnabled
         {
             get => _keyRepeatEnabled;
-            set => SetProperty(ref _keyRepeatEnabled, value);
+            set
+            {
+                if (SetProperty(ref _keyRepeatEnabled, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.KeyRepeatEnabled = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -49,7 +74,18 @@ namespace MapperGang.ViewModels
         public double KeyRepeatRate
         {
             get => _keyRepeatRate;
-            set => SetProperty(ref _keyRepeatRate, value);
+            set
+            {
+                if (SetProperty(ref _keyRepeatRate, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.KeyRepeatRate = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -58,7 +94,18 @@ namespace MapperGang.ViewModels
         public double AnalogKeySensitivity
         {
             get => _analogKeySensitivity;
-            set => SetProperty(ref _analogKeySensitivity, value);
+            set
+            {
+                if (SetProperty(ref _analogKeySensitivity, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.AnalogKeySensitivity = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -67,7 +114,18 @@ namespace MapperGang.ViewModels
         public string MovementUp
         {
             get => _movementUp;
-            set => SetProperty(ref _movementUp, value);
+            set
+            {
+                if (SetProperty(ref _movementUp, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.MovementUp = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -76,7 +134,18 @@ namespace MapperGang.ViewModels
         public string MovementLeft
         {
             get => _movementLeft;
-            set => SetProperty(ref _movementLeft, value);
+            set
+            {
+                if (SetProperty(ref _movementLeft, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.MovementLeft = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -85,7 +154,18 @@ namespace MapperGang.ViewModels
         public string MovementDown
         {
             get => _movementDown;
-            set => SetProperty(ref _movementDown, value);
+            set
+            {
+                if (SetProperty(ref _movementDown, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.MovementDown = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -94,7 +174,18 @@ namespace MapperGang.ViewModels
         public string MovementRight
         {
             get => _movementRight;
-            set => SetProperty(ref _movementRight, value);
+            set
+            {
+                if (SetProperty(ref _movementRight, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.MovementRight = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -103,7 +194,18 @@ namespace MapperGang.ViewModels
         public string MovementStyle
         {
             get => _movementStyle;
-            set => SetProperty(ref _movementStyle, value);
+            set
+            {
+                if (SetProperty(ref _movementStyle, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.MovementStyle = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -112,9 +214,63 @@ namespace MapperGang.ViewModels
         public bool AnalogKeyboardEnabled
         {
             get => _analogKeyboardEnabled;
-            set => SetProperty(ref _analogKeyboardEnabled, value);
+            set
+            {
+                if (SetProperty(ref _analogKeyboardEnabled, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.KeyboardSettings.AnalogKeyboardEnabled = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
         }
 
+
+        /// <summary>
+        /// Список доступных клавиш клавиатуры
+        /// </summary>
+        public List<string> AvailableKeyboardKeys { get; } = new List<string>
+            {
+                "Space",
+                "Left Ctrl",
+                "Left Shift",
+                "Left Alt",
+                "Tab",
+                "Enter",
+                "Esc",
+                "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
+                "A", "S", "D", "F", "G", "H", "J", "K", "L",
+                "Z", "X", "C", "V", "B", "N", "M",
+                "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
+                "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"
+            };
+
+        /// <summary>
+        /// Список доступных действий контроллера
+        /// </summary>
+        public List<string> AvailableControllerActions { get; } = new List<string>
+            {
+                "A Button",
+                "B Button",
+                "X Button",
+                "Y Button",
+                "Left Bumper",
+                "Right Bumper",
+                "Left Trigger",
+                "Right Trigger",
+                "Left Stick Press",
+                "Right Stick Press",
+                "D-Pad Up",
+                "D-Pad Down",
+                "D-Pad Left",
+                "D-Pad Right",
+                "Start Button",
+                "Back Button",
+                "Guide Button"
+            };
         /// <summary>
         /// Коллекция маппингов кнопок клавиатуры
         /// </summary>
@@ -150,91 +306,282 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор KeyboardViewModel
         /// </summary>
-        public KeyboardViewModel()
+        public KeyboardViewModel(IConfigService configService)
         {
-            // Инициализация свойств тестовыми данными
-            KeyboardLayout = "QWERTY";
-            KeyRepeatEnabled = true;
-            KeyRepeatRate = 70;
-            AnalogKeySensitivity = 65;
-            MovementUp = "W";
-            MovementLeft = "A";
-            MovementDown = "S";
-            MovementRight = "D";
-            MovementStyle = "8-Way";
-            AnalogKeyboardEnabled = true;
+            _configService = configService;
 
             // Инициализация коллекции маппингов
-            ButtonMappings = new ObservableCollection<KeyboardButtonMapping>
-            {
-                new KeyboardButtonMapping { KeyboardKey = "Space", ControllerButton = "A Button" },
-                new KeyboardButtonMapping { KeyboardKey = "Left Ctrl", ControllerButton = "B Button" },
-                new KeyboardButtonMapping { KeyboardKey = "Left Shift", ControllerButton = "X Button" },
-                new KeyboardButtonMapping { KeyboardKey = "Left Alt", ControllerButton = "Y Button" },
-                new KeyboardButtonMapping { KeyboardKey = "Q", ControllerButton = "Left Bumper" },
-                new KeyboardButtonMapping { KeyboardKey = "E", ControllerButton = "Right Bumper" },
-                new KeyboardButtonMapping { KeyboardKey = "R", ControllerButton = "Left Trigger" },
-                new KeyboardButtonMapping { KeyboardKey = "F", ControllerButton = "Right Trigger" }
-            };
+            ButtonMappings = new ObservableCollection<KeyboardButtonMapping>();
 
             // Инициализация команд
-            ResetToDefaultsCommand = new RelayCommand(OnResetToDefaults);
-            SaveMappingsCommand = new RelayCommand(OnSaveMappings);
-            AddMappingCommand = new RelayCommand(OnAddMapping);
+            ResetToDefaultsCommand = new RelayCommand(async _ => await OnResetToDefaults());
+            SaveMappingsCommand = new RelayCommand(async _ => await OnSaveMappings());
+            AddMappingCommand = new RelayCommand(_ => OnAddMapping());
             RemoveMappingCommand = new RelayCommand(OnRemoveMapping);
+
+            // Загрузка настроек
+            _ = LoadSettingsAsync();
+        }
+
+        /// <summary>
+        /// Загрузка настроек
+        /// </summary>
+        private async Task LoadSettingsAsync()
+        {
+            // Загружаем конфигурацию
+            _currentConfig = await _configService.LoadConfigAsync();
+
+            // Отладка загрузки маппингов
+            if (_currentConfig?.KeyboardSettings?.ButtonMappings != null)
+            {
+                string debug = "Загруженные маппинги:\n";
+                foreach (var mapping in _currentConfig.KeyboardSettings.ButtonMappings)
+                {
+                    debug += $"{mapping.KeyboardKey} -> {mapping.ControllerButton}\n";
+                }
+                System.Windows.MessageBox.Show(debug, "Загруженные маппинги");
+            }
+            else
+            {
+                System.Windows.MessageBox.Show("Маппинги не найдены или пусты", "Загруженные маппинги");
+            }
+
+            // Обновляем свойства
+            UpdatePropertiesFromConfig();
+        }
+
+        /// <summary>
+        /// Обновление свойств на основе загруженной конфигурации
+        /// </summary>
+        private void UpdatePropertiesFromConfig()
+        {
+            if (_currentConfig == null) return;
+
+            var keyboardSettings = _currentConfig.KeyboardSettings;
+
+            // Обновляем свойства
+            KeyboardLayout = keyboardSettings.KeyboardLayout;
+            KeyRepeatEnabled = keyboardSettings.KeyRepeatEnabled;
+            KeyRepeatRate = keyboardSettings.KeyRepeatRate;
+            AnalogKeySensitivity = keyboardSettings.AnalogKeySensitivity;
+            MovementUp = keyboardSettings.MovementUp;
+            MovementLeft = keyboardSettings.MovementLeft;
+            MovementDown = keyboardSettings.MovementDown;
+            MovementRight = keyboardSettings.MovementRight;
+            MovementStyle = keyboardSettings.MovementStyle;
+            AnalogKeyboardEnabled = keyboardSettings.AnalogKeyboardEnabled;
+
+            // Обновляем коллекцию маппингов
+            ButtonMappings.Clear();
+            foreach (var mapping in keyboardSettings.ButtonMappings)
+            {
+                // Проверяем, что значения существуют в списках доступных значений
+                string keyboardKey = mapping.KeyboardKey;
+                string controllerButton = mapping.ControllerButton;
+
+                if (!AvailableKeyboardKeys.Contains(keyboardKey))
+                    keyboardKey = AvailableKeyboardKeys.FirstOrDefault() ?? "Space";
+
+                if (!AvailableControllerActions.Contains(controllerButton))
+                    controllerButton = AvailableControllerActions.FirstOrDefault() ?? "A Button";
+
+                ButtonMappings.Add(new KeyboardButtonMapping
+                {
+                    KeyboardKey = keyboardKey,
+                    ControllerButton = controllerButton
+                });
+            }
         }
 
         #region Обработчики команд
-        private void OnResetToDefaults(object parameter)
+        /// <summary>
+        /// Обработчик команды сброса настроек
+        /// </summary>
+        private async Task OnResetToDefaults()
         {
-            // Заглушка для сброса на значения по умолчанию
+            // Сбрасываем настройки на значения по умолчанию
+            KeyboardSettingsModel defaultSettings = new KeyboardSettingsModel();
+
+            // Обновляем настройки в текущей конфигурации
+            if (_currentConfig != null)
+            {
+                _currentConfig.KeyboardSettings = defaultSettings;
+                await SaveSettingsAsync();
+            }
+
+            // Обновляем свойства
+            UpdatePropertiesFromConfig();
+
+            System.Windows.MessageBox.Show("Настройки клавиатуры сброшены к значениям по умолчанию.", "Сброс настроек",
+                          System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
         }
 
-        private void OnSaveMappings(object parameter)
+        /// <summary>
+        /// Обработчик команды сохранения маппингов
+        /// </summary>
+        private async Task OnSaveMappings()
         {
-            // Заглушка для сохранения маппингов
-        }
+            // Добавим отладочный вывод
+            string debug = "Сохраняемые маппинги:\n";
+            foreach (var mapping in ButtonMappings)
+            {
+                debug += $"{mapping.KeyboardKey} -> {mapping.ControllerButton}\n";
+            }
+            System.Windows.MessageBox.Show(debug, "Отладка");
 
-        private void OnAddMapping(object parameter)
+            // Обновляем настройки в текущей конфигурации
+            if (_currentConfig != null)
+            {
+                // Преобразуем ObservableCollection в List
+                _currentConfig.KeyboardSettings.ButtonMappings = ButtonMappings
+                    .Select(m => new KeyboardButtonMappingModel
+                    {
+                        KeyboardKey = m.KeyboardKey,
+                        ControllerButton = m.ControllerButton
+                    })
+                    .ToList();
+
+                // Сохраняем конфигурацию и проверяем результат
+                await SaveSettingsAsync();
+
+                // Загружаем заново конфигурацию для проверки
+                var reloadedConfig = await _configService.LoadConfigAsync();
+                string reloadedDebug = "Перезагруженные маппинги:\n";
+                foreach (var mapping in reloadedConfig.KeyboardSettings.ButtonMappings)
+                {
+                    reloadedDebug += $"{mapping.KeyboardKey} -> {mapping.ControllerButton}\n";
+                }
+                System.Windows.MessageBox.Show(reloadedDebug, "Перезагруженные данные");
+
+                System.Windows.MessageBox.Show("Настройки маппинга клавиатуры успешно сохранены.", "Сохранение настроек",
+                              System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            }
+        }
+        /// <summary>
+        /// Обработчик команды добавления нового маппинга
+        /// </summary>
+        private void OnAddMapping()
         {
-            // Добавление нового маппинга
-            ButtonMappings.Add(new KeyboardButtonMapping { KeyboardKey = "New Key", ControllerButton = "Select Action" });
-        }
+            // Используем первые элементы из наших списков
+            string defaultKey = AvailableKeyboardKeys.FirstOrDefault() ?? "Space";
+            string defaultAction = AvailableControllerActions.FirstOrDefault() ?? "A Button";
 
+            // Добавление нового маппинга с конкретными значениями
+            ButtonMappings.Add(new KeyboardButtonMapping
+            {
+                KeyboardKey = defaultKey,
+                ControllerButton = defaultAction
+            });
+
+            // Сохраняем изменения
+            _ = OnSaveMappings();
+        }
+        /// <summary>
+        /// Обработчик команды удаления маппинга
+        /// </summary>
         private void OnRemoveMapping(object parameter)
         {
             if (parameter is KeyboardButtonMapping mapping)
             {
                 ButtonMappings.Remove(mapping);
+
+                // Автоматически сохраняем изменения
+                if (_currentConfig != null)
+                {
+                    // Преобразуем ObservableCollection в List
+                    _currentConfig.KeyboardSettings.ButtonMappings = ButtonMappings
+                        .Select(m => new KeyboardButtonMappingModel
+                        {
+                            KeyboardKey = m.KeyboardKey,
+                            ControllerButton = m.ControllerButton
+                        })
+                        .ToList();
+
+                    _ = SaveSettingsAsync();
+                }
             }
         }
         #endregion
-    }
-
-    /// <summary>
-    /// Модель для хранения маппинга клавиш клавиатуры
-    /// </summary>
-    public class KeyboardButtonMapping : ViewModelBase
-    {
-        private string _keyboardKey;
-        private string _controllerButton;
 
         /// <summary>
-        /// Клавиша клавиатуры
+        /// Сохранение настроек
         /// </summary>
-        public string KeyboardKey
+        private async Task SaveSettingsAsync()
         {
-            get => _keyboardKey;
-            set => SetProperty(ref _keyboardKey, value);
+            if (_currentConfig == null) return;
+
+            // Сохраняем конфигурацию
+            await _configService.SaveConfigAsync(_currentConfig);
         }
 
         /// <summary>
-        /// Кнопка контроллера
+        /// Публичный метод для сохранения настроек маппингов
         /// </summary>
-        public string ControllerButton
+        public async Task SaveMappingsAsync()
         {
-            get => _controllerButton;
-            set => SetProperty(ref _controllerButton, value);
+            // Обновляем настройки в текущей конфигурации
+            if (_currentConfig != null)
+            {
+                // Преобразуем ObservableCollection в List
+                _currentConfig.KeyboardSettings.ButtonMappings = ButtonMappings
+                    .Select(m => new KeyboardButtonMappingModel
+                    {
+                        KeyboardKey = m.KeyboardKey,
+                        ControllerButton = m.ControllerButton
+                    })
+                    .ToList();
+
+                await SaveSettingsAsync();
+            }
+        }
+        /// <summary>
+        /// Модель для хранения маппинга клавиш клавиатуры
+        /// </summary>
+        public class KeyboardButtonMapping : ViewModelBase
+        {
+            private string _keyboardKey;
+            private string _controllerButton;
+            private KeyboardViewModel _parentViewModel;
+
+            /// <summary>
+            /// Клавиша клавиатуры
+            /// </summary>
+            public string KeyboardKey
+            {
+                get => _keyboardKey;
+                set
+                {
+                    if (SetProperty(ref _keyboardKey, value))
+                    {
+                        // Автоматически сохраняем изменения
+                        _ = _parentViewModel?.SaveMappingsAsync();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Кнопка контроллера
+            /// </summary>
+            public string ControllerButton
+            {
+                get => _controllerButton;
+                set
+                {
+                    if (SetProperty(ref _controllerButton, value))
+                    {
+                        // Автоматически сохраняем изменения
+                        _ = _parentViewModel?.SaveMappingsAsync();
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Инициализирует маппинг с ссылкой на родительскую ViewModel
+            /// </summary>
+            public void Initialize(KeyboardViewModel parentViewModel)
+            {
+                _parentViewModel = parentViewModel;
+            }
         }
     }
 }
