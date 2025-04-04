@@ -2,13 +2,13 @@
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.Windows;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Models;
-using MapperGang.Services.ConfigResetService;
-using MapperGang.Services.ConfigService;
-using MapperGang.Services.ProfileService;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigResetService;
+using MapperGangNET8.Services.ConfigService;
+using MapperGangNET8.Services.ProfileService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {

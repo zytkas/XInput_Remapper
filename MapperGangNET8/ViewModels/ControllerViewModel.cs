@@ -1,12 +1,12 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Threading.Tasks;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Models;
-using MapperGang.Services.ConfigResetService;
-using MapperGang.Services.ConfigService;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigResetService;
+using MapperGangNET8.Services.ConfigService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     public class ControllerViewModel : ViewModelBase
     {

@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Timers;
-using MapperGang.Models;
-using MapperGang.Services.ConfigService;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigService;
 using Timer = System.Timers.Timer;
 
-namespace MapperGang.Services.AutoSaveService
+namespace MapperGangNET8.Services.AutoSaveService
 {
     /// <summary>
     /// Сервис для автоматического сохранения настроек

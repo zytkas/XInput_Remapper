@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using MapperGang.ViewModels;
-using MapperGang.Views;
-using MapperGang.Services.ConfigService;
-using MapperGang.Services.ProfileService;
-using MapperGang.Services.AutoSaveService;
-using MapperGang.Services.ConfigResetService;
+using MapperGangNET8.ViewModels;
+using MapperGangNET8.Views;
+using MapperGangNET8.Services.ConfigService;
+using MapperGangNET8.Services.ProfileService;
+using MapperGangNET8.Services.AutoSaveService;
+using MapperGangNET8.Services.ConfigResetService;
 
-namespace MapperGang.Infrastructure.DI
+namespace MapperGangNET8.Infrastructure.DI
 {
     public static class ContainerConfig
     {

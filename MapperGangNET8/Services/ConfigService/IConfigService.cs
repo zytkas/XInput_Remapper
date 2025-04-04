@@ -1,5 +1,5 @@
-﻿using System.Threading.Tasks;
-using MapperGangNET8.Models;
+﻿using MapperGangNET8.Models;
+using System.Threading.Tasks;
 
 namespace MapperGangNET8.Services.ConfigService
 {

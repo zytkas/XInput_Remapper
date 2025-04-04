@@ -3,12 +3,12 @@ using System.Windows.Input;
 using System.Threading.Tasks;
 using Microsoft.Win32;
 using System.Windows;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Models;
-using MapperGang.Services.ConfigService;
-using MapperGang.Services.ConfigResetService;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigService;
+using MapperGangNET8.Services.ConfigResetService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     /// <summary>
     /// ViewModel для вкладки настроек приложения
