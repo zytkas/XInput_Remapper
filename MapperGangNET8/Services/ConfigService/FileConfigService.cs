@@ -3,9 +3,9 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Text.Json;
-using MapperGangNET8.Models;
+using MapperGang.Models;
 
-namespace MapperGangNET8.Services.ConfigService
+namespace MapperGang.Services.ConfigService
 {
     public class FileConfigService : IConfigService
     {

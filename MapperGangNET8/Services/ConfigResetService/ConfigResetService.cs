@@ -1,4 +1,4 @@
-﻿namespace MapperGangNET8.Services.ConfigResetService
+﻿namespace MapperGang.Services.ConfigResetService
 {
     public interface IConfigResetService
     {
@@ -6,7 +6,7 @@
         void NotifyConfigurationReset();
     }
 }
-namespace MapperGangNET8.Services.ConfigResetService
+namespace MapperGang.Services.ConfigResetService
 {
     public class ConfigResetService : IConfigResetService
     {

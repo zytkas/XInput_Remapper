@@ -1,11 +1,11 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
-using MapperGangNET8.Infrastructure.Commands;
-using MapperGangNET8.Models;
-using MapperGangNET8.Services.ConfigResetService;
-using MapperGangNET8.Services.ConfigService;
+using MapperGang.Infrastructure.Commands;
+using MapperGang.Models;
+using MapperGang.Services.ConfigResetService;
+using MapperGang.Services.ConfigService;
 
-namespace MapperGangNET8.ViewModels
+namespace MapperGang.ViewModels
 {
     /// <summary>
     /// ViewModel для вкладки настроек клавиатуры
