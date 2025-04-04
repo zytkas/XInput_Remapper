@@ -45,6 +45,20 @@ namespace MapperGang.ViewModels
                 }
             }
         }
+        public ObservableCollection<string> AvailableJoystickModes { get; } =
+        [
+        "Absolute Position",
+        "Relative Movement",
+        "Direct Input"
+        ];
+
+        public ObservableCollection<string> AvailableWheelMappings { get; } =
+        [
+          "Right Stick Y-Axis",
+          "Triggers",
+          "D-Pad Up/Down",
+          "Not Mapped"
+        ];
 
         /// <summary>
         /// Чувствительность мыши (0-100%)
@@ -245,16 +259,13 @@ namespace MapperGang.ViewModels
         {
             _configService = configService;
 
-            // Инициализация коллекции маппингов
             ButtonMappings = new ObservableCollection<MouseButtonMapping>();
 
-            // Инициализация команд
             ResetToDefaultsCommand = new RelayCommand(async _ => await OnResetToDefaults());
             SaveMappingsCommand = new RelayCommand(async _ => await OnSaveMappings());
             AddMappingCommand = new RelayCommand(_ => OnAddMapping());
             RemoveMappingCommand = new RelayCommand(OnRemoveMapping);
 
-            // Загрузка настроек
             _ = LoadSettingsAsync();
         }
 
@@ -263,10 +274,8 @@ namespace MapperGang.ViewModels
         /// </summary>
         private async Task LoadSettingsAsync()
         {
-            // Загружаем конфигурацию
             _currentConfig = await _configService.LoadConfigAsync();
 
-            // Отладка загрузки маппингов
             if (_currentConfig?.MouseSettings?.ButtonMappings != null)
             {
                 string debug = "Загруженные маппинги мыши:\n";
@@ -281,13 +290,9 @@ namespace MapperGang.ViewModels
                 System.Windows.MessageBox.Show("Маппинги мыши не найдены или пусты", "Загруженные маппинги");
             }
 
-            // Обновляем свойства
             UpdatePropertiesFromConfig();
         }
 
-        /// <summary>
-        /// Обновление свойств на основе загруженной конфигурации
-        /// </summary>
         /// <summary>
         /// Обновление свойств на основе загруженной конфигурации
         /// </summary>
@@ -297,7 +302,6 @@ namespace MapperGang.ViewModels
 
             var mouseSettings = _currentConfig.MouseSettings;
 
-            // Обновляем свойства
             MouseJoystickMode = mouseSettings.MouseJoystickMode;
             MouseSensitivity = mouseSettings.MouseSensitivity;
             InvertXAxis = mouseSettings.InvertXAxis;
@@ -306,11 +310,9 @@ namespace MapperGang.ViewModels
             MouseSmoothing = mouseSettings.MouseSmoothing;
             MouseWheelMapping = mouseSettings.MouseWheelMapping;
 
-            // Обновляем коллекцию маппингов
             ButtonMappings.Clear();
             foreach (var mapping in mouseSettings.ButtonMappings)
             {
-                // Проверяем, что значения существуют в списках доступных значений
                 string mouseButton = mapping.MouseButton;
                 string controllerButton = mapping.ControllerButton;
 
@@ -334,17 +336,14 @@ namespace MapperGang.ViewModels
         /// </summary>
         private async Task OnResetToDefaults()
         {
-            // Сбрасываем настройки на значения по умолчанию
             MouseSettingsModel defaultSettings = new MouseSettingsModel();
 
-            // Обновляем настройки в текущей конфигурации
             if (_currentConfig != null)
             {
                 _currentConfig.MouseSettings = defaultSettings;
                 await SaveSettingsAsync();
             }
 
-            // Обновляем свойства
             UpdatePropertiesFromConfig();
 
             System.Windows.MessageBox.Show("Настройки мыши сброшены к значениям по умолчанию.", "Сброс настроек",
@@ -356,7 +355,6 @@ namespace MapperGang.ViewModels
         /// </summary>
         private async Task OnSaveMappings()
         {
-            // Отладочный вывод
             string debug = "Сохраняемые маппинги мыши:\n";
             foreach (var mapping in ButtonMappings)
             {
@@ -364,10 +362,9 @@ namespace MapperGang.ViewModels
             }
             System.Windows.MessageBox.Show(debug, "Отладка");
 
-            // Обновляем настройки в текущей конфигурации
+
             if (_currentConfig != null)
-            {
-                // Преобразуем ObservableCollection в List
+{
                 _currentConfig.MouseSettings.ButtonMappings = ButtonMappings
                     .Select(m => new MouseButtonMappingModel
                     {
@@ -375,8 +372,6 @@ namespace MapperGang.ViewModels
                         ControllerButton = m.ControllerButton
                     })
                     .ToList();
-
-                // Сохраняем конфигурацию
                 await SaveSettingsAsync();
 
                 System.Windows.MessageBox.Show("Настройки маппинга мыши успешно сохранены.", "Сохранение настроек",
@@ -389,11 +384,10 @@ namespace MapperGang.ViewModels
         /// </summary>
         private void OnAddMapping()
         {
-            // Используем первые элементы из наших списков
+
             string defaultButton = AvailableMouseButtons.FirstOrDefault() ?? "Left Button";
             string defaultAction = AvailableControllerActions.FirstOrDefault() ?? "A Button";
 
-            // Добавление нового маппинга с конкретными значениями
             ButtonMappings.Add(new MouseButtonMapping
             {
                 MouseButton = defaultButton,

@@ -28,12 +28,10 @@
 
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
                         <TextBlock Text="Keyboard Layout" Margin="0,8"/>
-                        <ComboBox SelectedItem="{Binding KeyboardLayout}" Margin="0,0,0,16" HorizontalAlignment="Stretch">
-                            <ComboBoxItem Content="QWERTY"/>
-                            <ComboBoxItem Content="AZERTY"/>
-                            <ComboBoxItem Content="DVORAK"/>
-                            <ComboBoxItem Content="COLEMAK"/>
-                        </ComboBox>
+                        <ComboBox ItemsSource="{Binding AvailableKeyboardLayouts}" 
+                          SelectedItem="{Binding KeyboardLayout}" 
+                          Margin="0,0,0,16" 
+                          HorizontalAlignment="Stretch"/>
 
                         <Grid Margin="0,8,0,16">
                             <Grid.ColumnDefinitions>

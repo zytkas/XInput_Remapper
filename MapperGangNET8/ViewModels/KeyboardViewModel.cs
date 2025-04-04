@@ -279,6 +279,16 @@ namespace MapperGang.ViewModels
             get => _buttonMappings;
             set => SetProperty(ref _buttonMappings, value);
         }
+        /// <summary>
+        /// Available keyboard layouts
+        /// </summary>
+        public ObservableCollection<string> AvailableKeyboardLayouts { get; } =
+        [
+            "QWERTY",
+            "AZERTY",
+            "DVORAK",
+            "COLEMAK"
+        ];
         #endregion
 
         #region Команды

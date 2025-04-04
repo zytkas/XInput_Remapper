@@ -27,18 +27,16 @@
 
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
                         <TextBlock Text="Controller Type" Margin="0,8"/>
-                        <ComboBox SelectedItem="{Binding SelectedControllerType}" Margin="0,0,0,16" HorizontalAlignment="Stretch">
-                            <ComboBoxItem Content="Xbox 360 Controller"/>
-                            <ComboBoxItem Content="PlayStation Controller"/>
-                        </ComboBox>
+                        <ComboBox ItemsSource="{Binding AvailableControllerTypes}" 
+                          SelectedItem="{Binding SelectedControllerType}" 
+                          Margin="0,0,0,16" 
+                          HorizontalAlignment="Stretch"/>
 
                         <TextBlock Text="Controller Number" Margin="0,8"/>
-                        <ComboBox SelectedItem="{Binding ControllerNumber}" Margin="0,0,0,16" HorizontalAlignment="Stretch">
-                            <ComboBoxItem Content="Controller 1"/>
-                            <ComboBoxItem Content="Controller 2"/>
-                            <ComboBoxItem Content="Controller 3"/>
-                            <ComboBoxItem Content="Controller 4"/>
-                        </ComboBox>
+                        <ComboBox ItemsSource="{Binding AvailableControllerNumbers}" 
+                          SelectedItem="{Binding ControllerNumber}" 
+                          Margin="0,0,0,16" 
+                          HorizontalAlignment="Stretch"/>
 
 
                         <Grid Margin="0,8,0,16">

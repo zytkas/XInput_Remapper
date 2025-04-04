@@ -267,6 +267,26 @@ namespace MapperGang.ViewModels
                 }
             }
         }
+
+        /// <summary>
+        /// Available controller types
+        /// </summary>
+        public ObservableCollection<string> AvailableControllerTypes { get; } =
+        [
+            "Xbox 360 Controller",
+            "PlayStation Controller"
+        ];
+
+        /// <summary>
+        /// Available controller numbers
+        /// </summary>
+        public ObservableCollection<string> AvailableControllerNumbers { get; } =
+        [
+            "Controller 1",
+            "Controller 2",
+            "Controller 3",
+            "Controller 4"
+        ];
         #endregion
 
         #region Команды

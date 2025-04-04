@@ -27,20 +27,16 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-
-                    <!-- Левая колонка -->
+                    
                     <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <!-- Режим преобразования мыши -->
                         <TextBlock Text="Mouse to Joystick Mode" Margin="0,8"/>
-                        <ComboBox SelectedItem="{Binding MouseJoystickMode}" Margin="0,0,0,16" HorizontalAlignment="Stretch">
-                            <ComboBoxItem Content="Absolute Position"/>
-                            <ComboBoxItem Content="Relative Movement"/>
-                            <ComboBoxItem Content="Direct Input"/>
-                        </ComboBox>
+                        <ComboBox ItemsSource="{Binding AvailableJoystickModes}" 
+                          SelectedItem="{Binding MouseJoystickMode}"
+                          Margin="0,0,0,16" 
+                          HorizontalAlignment="Stretch"/>
                         <TextBlock Text="How mouse movement translates to joystick position" 
                                    FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,16"/>
 
-                        <!-- Чувствительность мыши -->
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -53,7 +49,6 @@
                         <Slider Value="{Binding MouseSensitivity}" 
                                 Maximum="100" Minimum="0" Margin="0,0,0,16"/>
 
-                        <!-- Инвертировать ось X -->
                         <Grid Margin="0,8,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -63,7 +58,6 @@
                             <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding InvertXAxis}"/>
                         </Grid>
 
-                        <!-- Инвертировать ось Y -->
                         <Grid Margin="0,8,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -73,7 +67,6 @@
                             <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding InvertYAxis}"/>
                         </Grid>
 
-                        <!-- Ускорение мыши -->
                         <Grid Margin="0,8,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -88,15 +81,13 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- Правая колонка -->
                     <StackPanel Grid.Column="1" Margin="16,0,0,0">
-                        <!-- Кривая отклика -->
+  
                         <TextBlock Text="Response Curve" FontWeight="SemiBold" Margin="0,8,0,16"/>
                         <Border Height="150" BorderBrush="#333333" BorderThickness="1" Margin="0,0,0,16">
                             <Line X1="0" Y1="150" X2="300" Y2="0" Stroke="#2076FF" StrokeThickness="2"/>
                         </Border>
 
-                        <!-- Кнопки выбора типа кривой -->
                         <Grid Margin="0,0,0,16">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -112,7 +103,6 @@
                                         Appearance="Secondary" Margin="4,0,0,0"/>
                         </Grid>
 
-                        <!-- Сглаживание мыши -->
                         <TextBlock Text="Mouse Smoothing" Margin="0,8,0,8"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -126,14 +116,11 @@
                         <TextBlock Text="Apply smoothing to mouse movements" 
                                    FontSize="12" Foreground="#AAAAAA" Margin="0,4,0,16"/>
 
-                        <!-- Маппинг колеса мыши -->
                         <TextBlock Text="Mouse Wheel" Margin="0,8"/>
-                        <ComboBox SelectedItem="{Binding MouseWheelMapping}" Margin="0,0,0,16" HorizontalAlignment="Stretch">
-                            <ComboBoxItem Content="Right Stick Y-Axis"/>
-                            <ComboBoxItem Content="Triggers"/>
-                            <ComboBoxItem Content="D-Pad Up/Down"/>
-                            <ComboBoxItem Content="Not Mapped"/>
-                        </ComboBox>
+                        <ComboBox ItemsSource="{Binding AvailableWheelMappings}"
+                          SelectedItem="{Binding MouseWheelMapping}" 
+                          Margin="0,0,0,16" 
+                          HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </Grid>
             </ui:Card>
