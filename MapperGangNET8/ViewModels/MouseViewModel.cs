@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Windows.Input;
 using System.Threading.Tasks;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Services.ConfigService;
-using MapperGang.Models;
 using System.Linq;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigResetService;
+using MapperGangNET8.Services.ConfigService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     public class MouseViewModel : ViewModelBase
     {
@@ -255,7 +256,7 @@ namespace MapperGang.ViewModels
         /// <summary>
         /// Конструктор MouseViewModel
         /// </summary>
-        public MouseViewModel(IConfigService configService)
+        public MouseViewModel(IConfigService configService, IConfigResetService resetService)
         {
             _configService = configService;
 

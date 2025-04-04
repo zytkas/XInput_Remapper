@@ -1,16 +1,18 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Threading.Tasks;
-using MapperGang.Infrastructure.Commands;
-using MapperGang.Services.ConfigService;
-using MapperGang.Models;
+using MapperGangNET8.Infrastructure.Commands;
+using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigResetService;
+using MapperGangNET8.Services.ConfigService;
 
-namespace MapperGang.ViewModels
+namespace MapperGangNET8.ViewModels
 {
     public class ControllerViewModel : ViewModelBase
     {
         private readonly IConfigService _configService;
         private ConfigModel _currentConfig;
+        
 
         #region Приватные поля
         private string _selectedControllerType;
@@ -301,9 +303,11 @@ namespace MapperGang.ViewModels
         public ICommand SaveSettingsCommand { get; }
         #endregion
 
-        public ControllerViewModel(IConfigService configService)
+        public ControllerViewModel(IConfigService configService, IConfigResetService resetService)
         {
+
             _configService = configService;
+            resetService.ConfigurationReset += async (s, e) => await LoadSettingsAsync();   
             RestartDeviceCommand = new RelayCommand(async _ => await OnRestartDevice());
             SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
             _ = LoadSettingsAsync();

@@ -1,6 +1,6 @@
-﻿using MapperGang.Models;
-using MapperGang.Services.ConfigService;
-using MapperGang.Services.ProfileService;
+﻿using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigService;
+using MapperGangNET8.Services.ProfileService;
 
 public class ProfileService : IProfileService
 {

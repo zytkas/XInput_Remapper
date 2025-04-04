@@ -1,7 +1,7 @@
-﻿using MapperGang.Models;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
+using MapperGangNET8.Models;
 
-namespace MapperGang.Services.ConfigService
+namespace MapperGangNET8.Services.ConfigService
 {
     /// <summary>
     /// Интерфейс сервиса конфигурации

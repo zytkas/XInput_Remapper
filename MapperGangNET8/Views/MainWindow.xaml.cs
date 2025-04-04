@@ -1,9 +1,9 @@
-﻿using MapperGang.ViewModels;
-using System.Windows;
+﻿using System.Windows;
+using MapperGangNET8.ViewModels;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
 
-namespace MapperGang.Views
+namespace MapperGangNET8.Views
 {
     public partial class MainWindow : FluentWindow
     {

@@ -1,6 +1,6 @@
-﻿using MapperGang.Models;
+﻿using MapperGangNET8.Models;
 
-namespace MapperGang.Services.ProfileService
+namespace MapperGangNET8.Services.ProfileService
 {
     /// <summary>
     /// Интерфейс сервиса управления профилями

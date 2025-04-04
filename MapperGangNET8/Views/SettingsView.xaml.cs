@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace MapperGang.Views
+namespace MapperGangNET8.Views
 {
     /// <summary>
     /// Interaction logic for SettingsView.xaml
