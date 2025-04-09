@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using System.Runtime.CompilerServices;
+using System.Windows;
 using MapperGangNET8.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using Wpf.Ui;
 using Wpf.Ui.Controls;
 
@@ -13,8 +15,11 @@ namespace MapperGangNET8.Views
         private readonly KeyboardViewModel _keyboardViewModel;
         private readonly SensitivityViewModel _sensitivityViewModel;
         private readonly SettingsViewModel _settingsViewModel;
+        private readonly IServiceProvider _serviceProvider;
+
         public MainWindow(MainViewModel mainViewModel, ControllerViewModel controllerViewModel, MouseViewModel mouseViewModel,
-            KeyboardViewModel keyboardViewModel, SensitivityViewModel sensitivityViewModel, SettingsViewModel settingsViewModel)
+            KeyboardViewModel keyboardViewModel, SensitivityViewModel sensitivityViewModel, SettingsViewModel settingsViewModel,
+            IServiceProvider serviceProvider)
         {
             InitializeComponent();
 
@@ -25,9 +30,9 @@ namespace MapperGangNET8.Views
             _sensitivityViewModel = sensitivityViewModel;
             _sensitivityViewModel = sensitivityViewModel;
             _settingsViewModel = settingsViewModel;
-
             DataContext = _mainViewModel;
             _settingsViewModel = settingsViewModel;
+            _serviceProvider = serviceProvider;
         }
 
         private void NavigationButton_Click(object sender, RoutedEventArgs e)
@@ -96,6 +101,12 @@ namespace MapperGangNET8.Views
                     DashboardPanel.Visibility = Visibility.Visible;
                     break;
             }
+        }
+
+        private void DebugInput_Click(object sender, RoutedEventArgs e)
+        {
+            var debugWindow = _serviceProvider.GetRequiredService<InputDebugWindow>();
+            debugWindow.Show();
         }
     }
 }

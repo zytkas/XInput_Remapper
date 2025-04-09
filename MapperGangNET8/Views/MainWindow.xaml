@@ -261,7 +261,16 @@
                     </ui:Button>
 
                     <Border Height="20" Width="1" Background="#333333" Margin="8,0"/>
-
+                    <ui:Button x:Name="DebugInputButton" 
+                      Appearance="Transparent" 
+                      Padding="8,4" 
+                      Click="DebugInput_Click" 
+                      ToolTip="Debug Input Service">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="Bug24" Foreground="#FF5555" Margin="0,0,6,0"/>
+                            <TextBlock Text="Input Debug" Foreground="#FF5555" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ui:Button>
                     <TextBlock Text="Made by zytka" Foreground="#888888" VerticalAlignment="Center" Margin="8,0"/>
                 </StackPanel>
             </Grid>
