@@ -6,6 +6,7 @@ using MapperGangNET8.Services.ProfileService;
 using MapperGangNET8.Services.AutoSaveService;
 using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.InputService;
+using MapperGangNET8.Services.ControllerService;
 
 namespace MapperGangNET8.Infrastructure.DI
 {
@@ -17,7 +18,9 @@ namespace MapperGangNET8.Infrastructure.DI
             services.AddSingleton<IProfileService, ProfileService>();
             services.AddSingleton<IConfigResetService, ConfigResetService>();
             services.AddSingleton<IInputService, Soju06InputService>();
+            services.AddSingleton<IControllerService, ViGemControllerService>();
             services.AddTransient<InputDebugWindow>();
+            services.AddTransient<ControllerDebugWindow>();
             services.AddSingleton<AutoSaveService>();
 
             //VM

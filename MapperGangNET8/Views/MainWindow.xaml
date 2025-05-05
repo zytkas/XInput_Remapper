@@ -237,14 +237,6 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="MapperGang" FontWeight="SemiBold" Foreground="#BBBBBB"/>
-                    <TextBlock Text=" v0.1.0 Beta" Foreground="#888888"/>
-                    <Border Background="#333333" CornerRadius="4" Margin="12,0,0,0" Padding="6,2">
-                        <TextBlock Text="Development Build" FontSize="11" Foreground="#AAAAAA"/>
-                    </Border>
-                </StackPanel>
-
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <ui:Button Appearance="Transparent" Padding="8,4" ToolTip="GitHub">
                         <StackPanel Orientation="Horizontal">
@@ -267,10 +259,23 @@
                       Click="DebugInput_Click" 
                       ToolTip="Debug Input Service">
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Symbol="Bug24" Foreground="#FF5555" Margin="0,0,6,0"/>
+                            <ui:SymbolIcon Symbol="Keyboard24" Foreground="#FF5555" Margin="0,0,6,0"/>
                             <TextBlock Text="Input Debug" Foreground="#FF5555" VerticalAlignment="Center"/>
                         </StackPanel>
                     </ui:Button>
+
+                    <ui:Button x:Name="DebugControllerButton" 
+                      Appearance="Transparent" 
+                      Padding="8,4" 
+                      Click="DebugController_Click" 
+                      ToolTip="Debug Controller Service"
+                      Margin="8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <ui:SymbolIcon Symbol="XboxController24" Foreground="#FF5555" Margin="0,0,6,0"/>
+                            <TextBlock Text="Controller Debug" Foreground="#FF5555" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ui:Button>
+
                     <TextBlock Text="Made by zytka" Foreground="#888888" VerticalAlignment="Center" Margin="8,0"/>
                 </StackPanel>
             </Grid>

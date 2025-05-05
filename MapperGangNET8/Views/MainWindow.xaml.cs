@@ -108,5 +108,11 @@ namespace MapperGangNET8.Views
             var debugWindow = _serviceProvider.GetRequiredService<InputDebugWindow>();
             debugWindow.Show();
         }
+
+        private void DebugController_Click(object sender, RoutedEventArgs e)
+        {
+            var debugWindow = _serviceProvider.GetRequiredService<ControllerDebugWindow>();
+            debugWindow.Show();
+        }
     }
 }
