@@ -1,0 +1,68 @@
+﻿<ui:FluentWindow x:Class="MapperGangNET8.Views.Dialogs.CurveEditorDialog"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:controls="clr-namespace:MapperGangNET8.Views.Controls"
+                 xmlns:dialogs="clr-namespace:MapperGangNET8.Views.Dialogs"
+                 mc:Ignorable="d" 
+                 Title="Response Curve Editor" 
+                 Width="600" 
+                 Height="500"
+                 WindowStartupLocation="CenterOwner"
+                 Background="#171717">
+    <Grid Margin="16" d:DataContext="{d:DesignInstance Type=dialogs:CurveEditorDialog}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <ui:SymbolIcon Symbol="TopSpeed24" Foreground="#2076FF" Margin="0,0,8,0"/>
+                <TextBlock x:Name="HeaderTextBlock" Text="Edit Response Curve" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
+            </StackPanel>
+
+            <ComboBox Grid.Column="1" x:Name="CurveTypeComboBox" Width="150" Margin="0,0,0,0"
+                      ItemsSource="{Binding AvailableCurveTypes}"
+                      SelectedItem="{Binding CurveType}"
+                      SelectionChanged="CurveTypeComboBox_SelectionChanged"/>
+        </Grid>
+
+        <!-- Curve Editor -->
+        <controls:CurveEditor Grid.Row="1" 
+                            x:Name="CurveEditor"
+                            CurveType="{Binding CurveType}" 
+                            Exponent="{Binding Exponent}"
+                            Strength="{Binding Strength}"
+                            Midpoint="{Binding Midpoint}"
+                            ControlPoints="{Binding ControlPoints}"
+                            CurveChangedCommand="{Binding CurveChangedCommand}"/>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="2" Margin="0,16,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <ui:Button Grid.Column="1" Content="Cancel" 
+                       Appearance="Secondary"
+                       Margin="0,0,8,0"
+                       Click="CancelButton_Click"/>
+
+            <ui:Button Grid.Column="2" Content="Apply" 
+                       Appearance="Primary"
+                       Click="ApplyButton_Click"/>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

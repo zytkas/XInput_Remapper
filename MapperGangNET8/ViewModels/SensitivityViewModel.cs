@@ -1,23 +1,28 @@
-﻿using System.Windows.Input;
+﻿using System.Collections.ObjectModel;
+using System.Windows.Input;
 using System.Threading.Tasks;
 using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.ConfigService;
-using Wpf.Ui.Appearance;
-using Wpf.Ui.Controls;
+using MapperGangNET8.Services.SensitivityService;
+using System.Collections.Generic;
+using System.Windows;
+using System;
+using System.Linq;
 
 namespace MapperGangNET8.ViewModels
 {
     /// <summary>
-    /// ViewModel для вкладки настроек чувствительности
+    /// ViewModel for sensitivity settings tab
     /// </summary>
     public class SensitivityViewModel : ViewModelBase
     {
         private readonly IConfigService _configService;
+        private readonly SensitivityManager _sensitivityManager;
         private ConfigModel _currentConfig;
 
-        #region Приватные поля
+        #region Private fields
         private double _mouseXAxisSensitivity;
         private double _mouseYAxisSensitivity;
         private string _mouseResponseCurveType;
@@ -31,11 +36,20 @@ namespace MapperGangNET8.ViewModels
         private bool _joystickAntiDeadzone;
         private bool _joystickRotation;
         private bool _joystickRadialDeadzone;
+
+        private double _mouseExponent;
+        private double _mouseCurveStrength;
+        private double _mouseCurveMidpoint;
+
+        private List<System.Windows.Point> _mouseCustomCurvePoints;
+
+        private bool _isEditingCurve;
+        private string _editingCurveType; // "Mouse" or "Joystick"
         #endregion
 
-        #region Публичные свойства
+        #region Public properties
         /// <summary>
-        /// Чувствительность оси X мыши (0-100%)
+        /// Mouse X-axis sensitivity (0-100%)
         /// </summary>
         public double MouseXAxisSensitivity
         {
@@ -44,10 +58,8 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseXAxisSensitivity, value))
                 {
-                    // Дополнительные вычисления при необходимости
                     OnPropertyChanged(nameof(MouseSensitivityOverall));
 
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.MouseXAxisSensitivity = value;
@@ -58,7 +70,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Чувствительность оси Y мыши (0-100%)
+        /// Mouse Y-axis sensitivity (0-100%)
         /// </summary>
         public double MouseYAxisSensitivity
         {
@@ -67,10 +79,8 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseYAxisSensitivity, value))
                 {
-                    // Дополнительные вычисления при необходимости
                     OnPropertyChanged(nameof(MouseSensitivityOverall));
 
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.MouseYAxisSensitivity = value;
@@ -81,12 +91,12 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Общая чувствительность мыши (среднее между X и Y)
+        /// Overall mouse sensitivity (average of X and Y)
         /// </summary>
         public double MouseSensitivityOverall => (_mouseXAxisSensitivity + _mouseYAxisSensitivity) / 2;
 
         /// <summary>
-        /// Тип кривой отклика мыши (Linear, S-Curve, Custom)
+        /// Mouse response curve type (Linear, S-Curve, Custom)
         /// </summary>
         public string MouseResponseCurveType
         {
@@ -95,15 +105,18 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseResponseCurveType, value))
                 {
-                    // Обновляем внешний вид всех кнопок кривых
                     OnPropertyChanged(nameof(MouseLinearCurveAppearance));
                     OnPropertyChanged(nameof(MouseSCurveAppearance));
                     OnPropertyChanged(nameof(MouseCustomCurveAppearance));
+                    OnPropertyChanged(nameof(MouseExponentialCurveAppearance));
 
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.MouseResponseCurveType = value;
+
+                        // Update the sensitivity manager
+                        _sensitivityManager.SetCurveType(value);
+
                         _ = SaveSettingsAsync();
                     }
                 }
@@ -111,25 +124,31 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Appearance для кнопки линейной кривой мыши
+        /// Appearance for Linear curve button
         /// </summary>
-        public ControlAppearance MouseLinearCurveAppearance =>
-            _mouseResponseCurveType == "Linear" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+        public Wpf.Ui.Controls.ControlAppearance MouseLinearCurveAppearance =>
+            _mouseResponseCurveType == "Linear" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
 
         /// <summary>
-        /// Appearance для кнопки S-кривой мыши
+        /// Appearance for S-Curve button
         /// </summary>
-        public ControlAppearance MouseSCurveAppearance =>
-            _mouseResponseCurveType == "S-Curve" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+        public Wpf.Ui.Controls.ControlAppearance MouseSCurveAppearance =>
+            _mouseResponseCurveType == "S-Curve" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
 
         /// <summary>
-        /// Appearance для кнопки пользовательской кривой мыши
+        /// Appearance for Exponential curve button
         /// </summary>
-        public ControlAppearance MouseCustomCurveAppearance =>
-            _mouseResponseCurveType == "Custom" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+        public Wpf.Ui.Controls.ControlAppearance MouseExponentialCurveAppearance =>
+            _mouseResponseCurveType == "Exponential" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
 
         /// <summary>
-        /// Включено ли ускорение мыши
+        /// Appearance for Custom curve button
+        /// </summary>
+        public Wpf.Ui.Controls.ControlAppearance MouseCustomCurveAppearance =>
+            _mouseResponseCurveType == "Custom" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
+
+        /// <summary>
+        /// Mouse acceleration enabled
         /// </summary>
         public bool MouseAcceleration
         {
@@ -138,7 +157,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseAcceleration, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.MouseAcceleration = value;
@@ -149,7 +167,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Сглаживание движений мыши (0-100%)
+        /// Mouse smoothing amount (0-100%)
         /// </summary>
         public double MouseSmoothing
         {
@@ -158,7 +176,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseSmoothing, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.MouseSmoothing = value;
@@ -169,22 +186,19 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Включено ли сглаживание мыши
+        /// Mouse smoothing enabled
         /// </summary>
         public bool MouseSmoothingEnabled
         {
             get => _mouseSmoothing > 0;
             set
             {
-                MouseSmoothing = value ? 30 : 0; // Используем 30% по умолчанию при включении
-
-                // Здесь не нужно вызывать SaveSettingsAsync(),
-                // так как оно будет вызвано из сеттера MouseSmoothing
+                MouseSmoothing = value ? 30 : 0; // Use 30% by default when enabling
             }
         }
 
         /// <summary>
-        /// Блокировка движения по одной оси
+        /// Mouse axis lock (restrict to one axis)
         /// </summary>
         public bool MouseAxisLock
         {
@@ -193,7 +207,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseAxisLock, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.MouseAxisLock = value;
@@ -204,7 +217,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Чувствительность джойстика (0-100%)
+        /// Joystick sensitivity (0-100%)
         /// </summary>
         public double JoystickSensitivity
         {
@@ -213,7 +226,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _joystickSensitivity, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.JoystickSensitivity = value;
@@ -224,7 +236,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Мертвая зона джойстика (0-100%)
+        /// Joystick deadzone (0-100%)
         /// </summary>
         public double JoystickDeadzone
         {
@@ -233,7 +245,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _joystickDeadzone, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.JoystickDeadzone = value;
@@ -244,7 +255,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Тип кривой отклика джойстика (Linear, Step, Custom)
+        /// Joystick response curve type (Linear, Step, Custom)
         /// </summary>
         public string JoystickResponseCurveType
         {
@@ -253,12 +264,10 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _joystickResponseCurveType, value))
                 {
-                    // Обновляем внешний вид всех кнопок кривых
                     OnPropertyChanged(nameof(JoystickLinearCurveAppearance));
                     OnPropertyChanged(nameof(JoystickStepCurveAppearance));
                     OnPropertyChanged(nameof(JoystickCustomCurveAppearance));
 
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.JoystickResponseCurveType = value;
@@ -269,25 +278,25 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Appearance для кнопки линейной кривой джойстика
+        /// Appearance for Linear joystick curve button
         /// </summary>
-        public ControlAppearance JoystickLinearCurveAppearance =>
-            _joystickResponseCurveType == "Linear" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+        public Wpf.Ui.Controls.ControlAppearance JoystickLinearCurveAppearance =>
+            _joystickResponseCurveType == "Linear" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
 
         /// <summary>
-        /// Appearance для кнопки ступенчатой кривой джойстика
+        /// Appearance for Step joystick curve button
         /// </summary>
-        public ControlAppearance JoystickStepCurveAppearance =>
-            _joystickResponseCurveType == "Step" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+        public Wpf.Ui.Controls.ControlAppearance JoystickStepCurveAppearance =>
+            _joystickResponseCurveType == "Step" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
 
         /// <summary>
-        /// Appearance для кнопки пользовательской кривой джойстика
+        /// Appearance for Custom joystick curve button
         /// </summary>
-        public ControlAppearance JoystickCustomCurveAppearance =>
-            _joystickResponseCurveType == "Custom" ? ControlAppearance.Primary : ControlAppearance.Secondary;
+        public Wpf.Ui.Controls.ControlAppearance JoystickCustomCurveAppearance =>
+            _joystickResponseCurveType == "Custom" ? Wpf.Ui.Controls.ControlAppearance.Primary : Wpf.Ui.Controls.ControlAppearance.Secondary;
 
         /// <summary>
-        /// Компенсация мертвой зоны джойстика
+        /// Joystick anti-deadzone
         /// </summary>
         public bool JoystickAntiDeadzone
         {
@@ -296,7 +305,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _joystickAntiDeadzone, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.JoystickAntiDeadzone = value;
@@ -307,7 +315,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Поворот ввода джойстика
+        /// Joystick input rotation
         /// </summary>
         public bool JoystickRotation
         {
@@ -316,7 +324,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _joystickRotation, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.JoystickRotation = value;
@@ -327,7 +334,7 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Использование радиальной мертвой зоны
+        /// Joystick radial deadzone
         /// </summary>
         public bool JoystickRadialDeadzone
         {
@@ -336,7 +343,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _joystickRadialDeadzone, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.SensitivitySettings.JoystickRadialDeadzone = value;
@@ -345,75 +351,216 @@ namespace MapperGangNET8.ViewModels
                 }
             }
         }
+
+        /// <summary>
+        /// Mouse exponent for exponential curve
+        /// </summary>
+        public double MouseExponent
+        {
+            get => _mouseExponent;
+            set
+            {
+                if (SetProperty(ref _mouseExponent, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.SensitivitySettings.MouseExponent = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Mouse curve strength for S-curve
+        /// </summary>
+        public double MouseCurveStrength
+        {
+            get => _mouseCurveStrength;
+            set
+            {
+                if (SetProperty(ref _mouseCurveStrength, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.SensitivitySettings.MouseCurveStrength = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Mouse curve midpoint for S-curve
+        /// </summary>
+        public double MouseCurveMidpoint
+        {
+            get => _mouseCurveMidpoint;
+            set
+            {
+                if (SetProperty(ref _mouseCurveMidpoint, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.SensitivitySettings.MouseCurveMidpoint = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Mouse custom curve control points
+        /// </summary>
+        public List<System.Windows.Point> MouseCustomCurvePoints
+        {
+            get => _mouseCustomCurvePoints;
+            set
+            {
+                if (SetProperty(ref _mouseCustomCurvePoints, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        // Convert to serializable format
+                        _currentConfig.SensitivitySettings.MouseCustomCurvePoints =
+                            value.Select(p => new PointModel { X = p.X, Y = p.Y }).ToList();
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether we're currently editing a curve
+        /// </summary>
+        public bool IsEditingCurve
+        {
+            get => _isEditingCurve;
+            set => SetProperty(ref _isEditingCurve, value);
+        }
+
+        /// <summary>
+        /// Type of curve being edited ("Mouse" or "Joystick")
+        /// </summary>
+        public string EditingCurveType
+        {
+            get => _editingCurveType;
+            set => SetProperty(ref _editingCurveType, value);
+        }
+
+        /// <summary>
+        /// Available mouse response curve types
+        /// </summary>
+        public ObservableCollection<string> AvailableMouseCurveTypes { get; } = new ObservableCollection<string>
+        {
+            "Linear",
+            "Exponential",
+            "S-Curve",
+            "Custom"
+        };
+
+        /// <summary>
+        /// Available joystick response curve types
+        /// </summary>
+        public ObservableCollection<string> AvailableJoystickCurveTypes { get; } = new ObservableCollection<string>
+        {
+            "Linear",
+            "Step",
+            "Custom"
+        };
         #endregion
 
-        #region Команды
+        #region Commands
         /// <summary>
-        /// Команда редактирования кривой отклика мыши
+        /// Command to edit mouse curve
         /// </summary>
-        public ICommand EditMouseCurveCommand { get; }
+        public ICommand EditMouseCurveCommand { get; set; }
 
         /// <summary>
-        /// Команда редактирования кривой отклика джойстика
+        /// Command to edit joystick curve
         /// </summary>
-        public ICommand EditJoystickCurveCommand { get; }
+        public ICommand EditJoystickCurveCommand { get; set; }
 
         /// <summary>
-        /// Команда выбора пресета кривой отклика мыши
+        /// Command to select mouse curve preset
         /// </summary>
         public ICommand SelectMouseCurvePresetCommand { get; }
 
         /// <summary>
-        /// Команда выбора пресета кривой отклика джойстика
+        /// Command to select joystick curve preset
         /// </summary>
         public ICommand SelectJoystickCurvePresetCommand { get; }
 
         /// <summary>
-        /// Команда сброса настроек на значения по умолчанию
+        /// Command to reset to default settings
         /// </summary>
         public ICommand ResetToDefaultsCommand { get; }
 
         /// <summary>
-        /// Команда сохранения настроек
+        /// Command to save settings
         /// </summary>
         public ICommand SaveMappingsCommand { get; }
+
+        /// <summary>
+        /// Command for handling curve changes
+        /// </summary>
+        public ICommand CurveChangedCommand { get; }
+
+        /// <summary>
+        /// Command to close curve editor
+        /// </summary>
+        public ICommand CloseCurveEditorCommand { get; }
         #endregion
 
         /// <summary>
-        /// Конструктор SensitivityViewModel
+        /// Constructor
         /// </summary>
         public SensitivityViewModel(IConfigService configService, IConfigResetService resetService)
         {
             _configService = configService;
-resetService.ConfigurationReset += async (sender, e) => await LoadSettingsAsync();
-            // Инициализация команд
-            EditMouseCurveCommand = new RelayCommand(async _ => await OnEditMouseCurve());
-            EditJoystickCurveCommand = new RelayCommand(async _ => await OnEditJoystickCurve());
+            resetService.ConfigurationReset += async (sender, e) => await LoadSettingsAsync();
+
+            // Initialize sensitivity manager
+            _sensitivityManager = new SensitivityManager();
+
+            // Initialize commands
+            EditMouseCurveCommand = new RelayCommand(_ => OnEditMouseCurve());
+            EditJoystickCurveCommand = new RelayCommand(_ => OnEditJoystickCurve());
             SelectMouseCurvePresetCommand = new RelayCommand(OnSelectMouseCurvePreset);
             SelectJoystickCurvePresetCommand = new RelayCommand(OnSelectJoystickCurvePreset);
-
-            // Добавляем новые команды
             ResetToDefaultsCommand = new RelayCommand(async _ => await OnResetToDefaults());
             SaveMappingsCommand = new RelayCommand(async _ => await OnSaveSettings());
+            CurveChangedCommand = new RelayCommand(_ => OnCurveChanged());
+            CloseCurveEditorCommand = new RelayCommand(_ => OnCloseCurveEditor());
 
-            // Загрузка настроек
+            // Initialize defaults
+            _mouseExponent = 2.0;
+            _mouseCurveStrength = 0.5;
+            _mouseCurveMidpoint = 0.5;
+            _mouseCustomCurvePoints = new List<System.Windows.Point>
+            {
+                new System.Windows.Point(0, 0),
+                new System.Windows.Point(0.25, 0.25),
+                new System.Windows.Point(0.5, 0.5),
+                new System.Windows.Point(0.75, 0.75),
+                new System.Windows.Point(1, 1)
+            };
+
+            // Load settings
             _ = LoadSettingsAsync();
         }
 
         /// <summary>
-        /// Загрузка настроек
+        /// Load settings from config service
         /// </summary>
         private async Task LoadSettingsAsync()
         {
-            // Загружаем конфигурацию
             _currentConfig = await _configService.LoadConfigAsync();
-
-            // Обновляем свойства
             UpdatePropertiesFromConfig();
         }
 
         /// <summary>
-        /// Обновление свойств на основе загруженной конфигурации
+        /// Update properties from loaded config
         /// </summary>
         private void UpdatePropertiesFromConfig()
         {
@@ -421,7 +568,7 @@ resetService.ConfigurationReset += async (sender, e) => await LoadSettingsAsync(
 
             var sensitivitySettings = _currentConfig.SensitivitySettings;
 
-            // Обновляем свойства мыши
+            // Update mouse settings
             MouseXAxisSensitivity = sensitivitySettings.MouseXAxisSensitivity;
             MouseYAxisSensitivity = sensitivitySettings.MouseYAxisSensitivity;
             MouseResponseCurveType = sensitivitySettings.MouseResponseCurveType;
@@ -429,100 +576,117 @@ resetService.ConfigurationReset += async (sender, e) => await LoadSettingsAsync(
             MouseSmoothing = sensitivitySettings.MouseSmoothing;
             MouseAxisLock = sensitivitySettings.MouseAxisLock;
 
-            // Обновляем свойства джойстика
+            // Update mouse curve parameters
+            MouseExponent = sensitivitySettings.MouseExponent;
+            MouseCurveStrength = sensitivitySettings.MouseCurveStrength;
+            MouseCurveMidpoint = sensitivitySettings.MouseCurveMidpoint;
+
+            // Update custom curve points
+            if (sensitivitySettings.MouseCustomCurvePoints != null && sensitivitySettings.MouseCustomCurvePoints.Count > 0)
+            {
+                MouseCustomCurvePoints = sensitivitySettings.MouseCustomCurvePoints
+                    .Select(p => new System.Windows.Point(p.X, p.Y))
+                    .ToList();
+
+                // Update the custom curve provider with these points
+                if (_sensitivityManager.CurrentCurveType == "Custom")
+                {
+                    var controlPoints = MouseCustomCurvePoints
+                        .Select(p => ((p.X * 2.0) - 1.0, (p.Y * 2.0) - 1.0))
+                        .ToList();
+
+                    _sensitivityManager.SetCustomCurveControlPoints(controlPoints);
+                }
+            }
+
+            // Update joystick settings
             JoystickSensitivity = sensitivitySettings.JoystickSensitivity;
             JoystickDeadzone = sensitivitySettings.JoystickDeadzone;
             JoystickResponseCurveType = sensitivitySettings.JoystickResponseCurveType;
             JoystickAntiDeadzone = sensitivitySettings.JoystickAntiDeadzone;
             JoystickRotation = sensitivitySettings.JoystickRotation;
             JoystickRadialDeadzone = sensitivitySettings.JoystickRadialDeadzone;
+
+            // Set the active curve type in the sensitivity manager
+            _sensitivityManager.SetCurveType(MouseResponseCurveType);
         }
 
-        #region Обработчики команд
+        #region Command handlers
         /// <summary>
-        /// Обработчик команды редактирования кривой отклика мыши
+        /// Handle Edit Mouse Curve command
         /// </summary>
-        private async Task OnEditMouseCurve()
+        private void OnEditMouseCurve()
         {
-            // В будущем здесь будет реализован редактор кривой отклика мыши
-            System.Windows.MessageBox.Show("Редактор кривой отклика мыши будет реализован в будущих версиях.",
-                                        "Информация",
-                                        System.Windows.MessageBoxButton.OK,
-                                        System.Windows.MessageBoxImage.Information);
+            IsEditingCurve = true;
+            EditingCurveType = "Mouse";
         }
 
         /// <summary>
-        /// Обработчик команды редактирования кривой отклика джойстика
+        /// Handle Edit Joystick Curve command
         /// </summary>
-        private async Task OnEditJoystickCurve()
+        private void OnEditJoystickCurve()
         {
-            // В будущем здесь будет реализован редактор кривой отклика джойстика
-            System.Windows.MessageBox.Show("Редактор кривой отклика джойстика будет реализован в будущих версиях.",
-                                        "Информация",
-                                        System.Windows.MessageBoxButton.OK,
-                                        System.Windows.MessageBoxImage.Information);
+            IsEditingCurve = true;
+            EditingCurveType = "Joystick";
         }
 
         /// <summary>
-        /// Обработчик команды выбора пресета кривой отклика мыши
+        /// Handle Select Mouse Curve Preset command
         /// </summary>
         private void OnSelectMouseCurvePreset(object parameter)
         {
             if (parameter is string presetType)
             {
                 MouseResponseCurveType = presetType;
-                // Здесь можно добавить логику для изменения формы кривой
             }
         }
 
         /// <summary>
-        /// Обработчик команды выбора пресета кривой отклика джойстика
+        /// Handle Select Joystick Curve Preset command
         /// </summary>
         private void OnSelectJoystickCurvePreset(object parameter)
         {
             if (parameter is string presetType)
             {
                 JoystickResponseCurveType = presetType;
-                // Здесь можно добавить логику для изменения формы кривой
             }
         }
 
         /// <summary>
-        /// Обработчик команды сброса настроек
+        /// Handle Reset to Defaults command
         /// </summary>
         private async Task OnResetToDefaults()
         {
-            // Запрашиваем подтверждение
-            System.Windows.MessageBoxResult result = System.Windows.MessageBox.Show(
-                "Сбросить настройки чувствительности к значениям по умолчанию?",
-                "Сброс настроек",
-                System.Windows.MessageBoxButton.YesNo,
-                System.Windows.MessageBoxImage.Question);
+            MessageBoxResult result = MessageBox.Show(
+                "Reset sensitivity settings to default values?",
+                "Reset Settings",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
 
-            if (result == System.Windows.MessageBoxResult.Yes)
+            if (result == MessageBoxResult.Yes)
             {
-                // Создаем новые настройки чувствительности с значениями по умолчанию
+                // Create new sensitivity settings with default values
                 SensitivitySettingsModel defaultSettings = new SensitivitySettingsModel();
 
-                // Обновляем настройки в текущей конфигурации
+                // Update current config
                 if (_currentConfig != null)
                 {
                     _currentConfig.SensitivitySettings = defaultSettings;
                     await SaveSettingsAsync();
                 }
 
-                // Обновляем свойства из новых настроек
+                // Update properties
                 UpdatePropertiesFromConfig();
 
-                System.Windows.MessageBox.Show("Настройки чувствительности сброшены к значениям по умолчанию.",
-                                            "Сброс настроек",
-                                            System.Windows.MessageBoxButton.OK,
-                                            System.Windows.MessageBoxImage.Information);
+                MessageBox.Show("Sensitivity settings reset to default values.",
+                              "Reset Settings",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Information);
             }
         }
 
         /// <summary>
-        /// Обработчик команды сохранения настроек
+        /// Handle Save Settings command
         /// </summary>
         private async Task OnSaveSettings()
         {
@@ -530,23 +694,81 @@ resetService.ConfigurationReset += async (sender, e) => await LoadSettingsAsync(
             {
                 await SaveSettingsAsync();
 
-                System.Windows.MessageBox.Show("Настройки чувствительности успешно сохранены.",
-                                            "Сохранение настроек",
-                                            System.Windows.MessageBoxButton.OK,
-                                            System.Windows.MessageBoxImage.Information);
+                MessageBox.Show("Sensitivity settings saved successfully.",
+                              "Save Settings",
+                              MessageBoxButton.OK,
+                              MessageBoxImage.Information);
             }
+        }
+
+        /// <summary>
+        /// Handle Curve Changed command
+        /// </summary>
+        private void OnCurveChanged()
+        {
+            // This is called when a curve is modified in the editor
+            SaveSettingsAsync().ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Handle Close Curve Editor command
+        /// </summary>
+        private void OnCloseCurveEditor()
+        {
+            IsEditingCurve = false;
+            EditingCurveType = null;
         }
         #endregion
 
         /// <summary>
-        /// Сохранение настроек
+        /// Save settings to config service
         /// </summary>
         private async Task SaveSettingsAsync()
         {
             if (_currentConfig == null) return;
 
-            // Сохраняем конфигурацию
+            // Save the configuration
             await _configService.SaveConfigAsync(_currentConfig);
+        }
+
+        /// <summary>
+        /// Process an input value through the current sensitivity curve
+        /// </summary>
+        /// <param name="input">Input value (-1 to 1)</param>
+        /// <param name="isMouse">Whether this is for mouse (true) or joystick (false)</param>
+        /// <returns>Processed value (-1 to 1)</returns>
+        public double ProcessInput(double input, bool isMouse = true)
+        {
+            if (isMouse)
+            {
+                // For mouse, use the sensitivity manager
+                double[] parameters = GetCurveParameters(MouseResponseCurveType);
+                return _sensitivityManager.ProcessValue(input, parameters);
+            }
+            else
+            {
+                // For joystick, we'll implement this later
+                // For now, just pass through the input
+                return input;
+            }
+        }
+
+        /// <summary>
+        /// Get the parameters for a specific curve type
+        /// </summary>
+        private double[] GetCurveParameters(string curveType)
+        {
+            switch (curveType)
+            {
+                case "Exponential":
+                    return new double[] { MouseExponent };
+
+                case "S-Curve":
+                    return new double[] { MouseCurveStrength, MouseCurveMidpoint };
+
+                default:
+                    return Array.Empty<double>();
+            }
         }
     }
 }

@@ -7,6 +7,10 @@ using MapperGangNET8.Services.AutoSaveService;
 using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.InputService;
 using MapperGangNET8.Services.ControllerService;
+using MapperGangNET8.Services.SensitivityService;
+using MapperGangNET8.Services.InputMappingService;
+using MapperGangNET8.Views.Controls;
+using MapperGangNET8.Views.Dialogs;
 
 namespace MapperGangNET8.Infrastructure.DI
 {
@@ -14,22 +18,33 @@ namespace MapperGangNET8.Infrastructure.DI
     {
         public static void Configure(IServiceCollection services)
         {
+            // Register services
             services.AddSingleton<IConfigService, FileConfigService>();
             services.AddSingleton<IProfileService, ProfileService>();
             services.AddSingleton<IConfigResetService, ConfigResetService>();
             services.AddSingleton<IInputService, Soju06InputService>();
             services.AddSingleton<IControllerService, ViGemControllerService>();
+            services.AddSingleton<InputProcessorService>();
+            services.AddSingleton<SensitivityManager>();
+            services.AddSingleton<InputMappingService>();
+
+
+            // Register debug windows
             services.AddTransient<InputDebugWindow>();
             services.AddTransient<ControllerDebugWindow>();
+
+            // Register utility services
             services.AddSingleton<AutoSaveService>();
 
-            //VM
+            // Register ViewModels
             services.AddSingleton<ControllerViewModel>();
             services.AddSingleton<MouseViewModel>();
             services.AddSingleton<KeyboardViewModel>();
             services.AddSingleton<SensitivityViewModel>();
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<MainViewModel>();
+
+            // Register main window
             services.AddSingleton<MainWindow>();
         }
     }
