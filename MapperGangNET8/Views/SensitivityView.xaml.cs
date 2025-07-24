@@ -6,7 +6,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using MapperGangNET8.Services.SensitivityService;
 using MapperGangNET8.ViewModels;
 
 namespace MapperGangNET8.Views
