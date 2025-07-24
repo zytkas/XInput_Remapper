@@ -7,10 +7,7 @@ using MapperGangNET8.Services.AutoSaveService;
 using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.InputService;
 using MapperGangNET8.Services.ControllerService;
-using MapperGangNET8.Services.SensitivityService;
 using MapperGangNET8.Services.InputMappingService;
-using MapperGangNET8.Views.Controls;
-using MapperGangNET8.Views.Dialogs;
 
 namespace MapperGangNET8.Infrastructure.DI
 {
@@ -25,7 +22,6 @@ namespace MapperGangNET8.Infrastructure.DI
             services.AddSingleton<IInputService, Soju06InputService>();
             services.AddSingleton<IControllerService, ViGemControllerService>();
             services.AddSingleton<InputProcessorService>();
-            services.AddSingleton<SensitivityManager>();
             services.AddSingleton<InputMappingService>();
 
 

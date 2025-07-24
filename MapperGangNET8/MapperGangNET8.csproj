@@ -20,4 +20,8 @@
     <PackageReference Include="WPF-UI.Tray" Version="4.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\SensitivityService\" />
+  </ItemGroup>
+
 </Project>

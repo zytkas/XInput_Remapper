@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
-using MapperGangNET8.Services.SensitivityService;
+
 
 namespace MapperGangNET8.Services.InputService
 {
@@ -12,10 +12,7 @@ namespace MapperGangNET8.Services.InputService
     public class InputProcessorService
     {
         private readonly IConfigService _configService;
-        private readonly SensitivityManager _sensitivityManager;
         private ConfigModel _currentConfig;
-        private ISensitivityProvider _mouseCurveProvider;
-        private ISensitivityProvider _joystickCurveProvider;
         private double[] _mouseCurveParams;
         private double[] _joystickCurveParams;
 
@@ -39,11 +36,6 @@ namespace MapperGangNET8.Services.InputService
         public InputProcessorService(IConfigService configService)
         {
             _configService = configService;
-            _sensitivityManager = new SensitivityManager();
-
-            // Initialize default providers
-            _mouseCurveProvider = new LinearCurveProvider();
-            _joystickCurveProvider = new LinearCurveProvider();
             _mouseCurveParams = Array.Empty<double>();
             _joystickCurveParams = Array.Empty<double>();
 
@@ -81,9 +73,6 @@ namespace MapperGangNET8.Services.InputService
             _joystickDeadzone = settings.JoystickDeadzone / 100.0;
             _joystickRadialDeadzone = settings.JoystickRadialDeadzone;
 
-            // Update mouse curve
-            _sensitivityManager.SetCurveType(settings.MouseResponseCurveType);
-            _mouseCurveProvider = _sensitivityManager.CurrentProvider;
 
             // Set mouse curve parameters
             if (settings.MouseResponseCurveType == "Exponential")
@@ -104,7 +93,6 @@ namespace MapperGangNET8.Services.InputService
                     points.Add(((point.X * 2.0) - 1.0, (point.Y * 2.0) - 1.0));
                 }
 
-                _sensitivityManager.SetCustomCurveControlPoints(points);
             }
 
             // For simplicity, joystick uses linear curve for now
@@ -165,9 +153,6 @@ namespace MapperGangNET8.Services.InputService
                 y = Math.Max(-1.0, Math.Min(1.0, y));
             }
 
-            // Apply response curve
-            x = _mouseCurveProvider.ProcessValue(x, _mouseCurveParams);
-            y = _mouseCurveProvider.ProcessValue(y, _mouseCurveParams);
 
             // Apply smoothing if enabled
             if (_mouseSmoothing > 0)
