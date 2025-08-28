@@ -9,7 +9,6 @@ namespace MapperGangNET8.Views
 {
     public partial class MainWindow : FluentWindow
     {
-        private readonly ControllerViewModel _controllerViewModel;
         private readonly MainViewModel _mainViewModel;
         private readonly MouseViewModel _mouseViewModel;
         private readonly KeyboardViewModel _keyboardViewModel;
@@ -17,14 +16,13 @@ namespace MapperGangNET8.Views
         private readonly SettingsViewModel _settingsViewModel;
         private readonly IServiceProvider _serviceProvider;
 
-        public MainWindow(MainViewModel mainViewModel, ControllerViewModel controllerViewModel, MouseViewModel mouseViewModel,
+        public MainWindow(MainViewModel mainViewModel, MouseViewModel mouseViewModel,
             KeyboardViewModel keyboardViewModel, SensitivityViewModel sensitivityViewModel, SettingsViewModel settingsViewModel,
             IServiceProvider serviceProvider)
         {
             InitializeComponent();
 
             _mainViewModel = mainViewModel;
-            _controllerViewModel = controllerViewModel;
             _mouseViewModel = mouseViewModel;
             _keyboardViewModel = keyboardViewModel;
             _sensitivityViewModel = sensitivityViewModel;
@@ -47,7 +45,6 @@ namespace MapperGangNET8.Views
         private void UpdateButtonAppearances(int selectedIndex)
         {
             DashboardTab.Appearance = ControlAppearance.Secondary;
-            ControllerTab.Appearance = ControlAppearance.Secondary;
             MouseTab.Appearance = ControlAppearance.Secondary;
             KeyboardTab.Appearance = ControlAppearance.Secondary;
             SensitivityTab.Appearance = ControlAppearance.Secondary;
@@ -56,11 +53,10 @@ namespace MapperGangNET8.Views
             switch (selectedIndex)
             {
                 case 0: DashboardTab.Appearance = ControlAppearance.Primary; break;
-                case 1: ControllerTab.Appearance = ControlAppearance.Primary; break;
-                case 2: MouseTab.Appearance = ControlAppearance.Primary; break;
-                case 3: KeyboardTab.Appearance = ControlAppearance.Primary; break;
-                case 4: SensitivityTab.Appearance = ControlAppearance.Primary; break;
-                case 5: SettingsTab.Appearance = ControlAppearance.Primary; break;
+                case 1: MouseTab.Appearance = ControlAppearance.Primary; break;
+                case 2: KeyboardTab.Appearance = ControlAppearance.Primary; break;
+                case 3: SensitivityTab.Appearance = ControlAppearance.Primary; break;
+                case 4: SettingsTab.Appearance = ControlAppearance.Primary; break;
             }
         }
 
@@ -76,24 +72,19 @@ namespace MapperGangNET8.Views
                     DashboardPanel.Visibility = Visibility.Visible;
                     break;
 
-                case 1: // Controller
-                    ContentContainer.Content = new ControllerView { DataContext = _controllerViewModel };
-                    ContentContainer.Visibility = Visibility.Visible;
-                    break;
-
-                case 2: // Mouse
+                case 1: // Mouse
                     ContentContainer.Content = new MouseView { DataContext = _mouseViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;
-                case 3: // Keyboard
+                case 2: // Keyboard
                     ContentContainer.Content = new KeyboardView { DataContext = _keyboardViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;
-                case 4: // Sensitivity
+                case 3: // Sensitivity
                     ContentContainer.Content = new SensitivityView { DataContext = _sensitivityViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;
-                case 5: // Settings
+                case 4: // Settings
                     ContentContainer.Content = new SettingsView { DataContext = _settingsViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;

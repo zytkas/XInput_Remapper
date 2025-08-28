@@ -13,7 +13,6 @@ namespace MapperGangNET8.Models
 
         public AppSettingsModel AppSettings { get; set; } = new AppSettingsModel();
 
-        public ControllerSettingsModel ControllerSettings { get; set; } = new ControllerSettingsModel();
 
         public MouseSettingsModel MouseSettings { get; set; } = new MouseSettingsModel();
 

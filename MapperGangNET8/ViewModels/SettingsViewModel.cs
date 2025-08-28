@@ -34,6 +34,7 @@ namespace MapperGangNET8.ViewModels
         private bool _debugMode;
         private string _inputPollingRate;
         private string _processPriority;
+        private string _selectedControllerType;
         #endregion
 
         #region Публичные свойства
@@ -236,9 +237,30 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
+        /// Выбранный тип контроллера
+        /// </summary>
+        public string SelectedControllerType
+        {
+            get => _selectedControllerType;
+            set
+            {
+                if (SetProperty(ref _selectedControllerType, value))
+                {
+                    // Обновляем настройки в текущей конфигурации
+                    _currentConfig.AppSettings.SelectedControllerType = value;
+                }
+            }
+        }
+
+        /// <summary>
         /// Список доступных профилей
         /// </summary>
         public ObservableCollection<string> AvailableProfiles { get; }
+
+        /// <summary>
+        /// Список доступных типов контроллеров
+        /// </summary>
+        public ObservableCollection<string> AvailableControllerTypes { get; }
 
         /// <summary>
         /// Список доступных частот опроса
@@ -322,6 +344,7 @@ namespace MapperGangNET8.ViewModels
             AvailableProfiles = new ObservableCollection<string> { "Default", "Game", "Office", "Custom" };
             AvailablePollingRates = new ObservableCollection<string> { "125 Hz", "250 Hz", "500 Hz", "1000 Hz" };
             AvailablePriorities = new ObservableCollection<string> { "Low", "Normal", "High", "RealTime" };
+            AvailableControllerTypes = new ObservableCollection<string> { "Xbox 360 Controller", "DualShock 4 Controller" };
 
             ResetAllSettingsCommand = new RelayCommand(async _ => await OnResetAllSettings());
             SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
@@ -364,6 +387,7 @@ namespace MapperGangNET8.ViewModels
             DebugMode = appSettings.DebugMode;
             InputPollingRate = appSettings.InputPollingRate;
             ProcessPriority = appSettings.ProcessPriority;
+            SelectedControllerType = appSettings.SelectedControllerType;
 
             // Проверяем, есть ли профиль по умолчанию в списке доступных профилей
             if (!AvailableProfiles.Contains(DefaultProfile))

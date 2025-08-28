@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\SensitivityService\**" />
+    <EmbeddedResource Remove="Services\SensitivityService\**" />
+    <None Remove="Services\SensitivityService\**" />
+    <Page Remove="Services\SensitivityService\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Input" Version="1.0.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.3" />
@@ -18,10 +25,6 @@
     <PackageReference Include="WPF-UI" Version="4.0.2" />
     <PackageReference Include="WPF-UI.Abstractions" Version="4.0.2" />
     <PackageReference Include="WPF-UI.Tray" Version="4.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\SensitivityService\" />
   </ItemGroup>
 
 </Project>

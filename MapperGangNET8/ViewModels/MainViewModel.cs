@@ -171,17 +171,14 @@ namespace MapperGangNET8.ViewModels
         #endregion
 
         // Зависимости для навигации
-        private readonly ControllerViewModel _controllerViewModel;
 
         /// <summary>
         /// Конструктор MainViewModel
         /// </summary>
-        public MainViewModel(ControllerViewModel controllerViewModel,
-                            IConfigService configService,
+        public MainViewModel(IConfigService configService,
                             IProfileService profileService,
                             InputMappingService inputMappingService)
         {
-            _controllerViewModel = controllerViewModel;
             _configService = configService;
             _profileService = profileService;
             _inputMappingService = inputMappingService;
@@ -234,7 +231,7 @@ namespace MapperGangNET8.ViewModels
             if (_currentConfig == null) return;
 
             // Базовые свойства
-            DeviceType = _currentConfig.ControllerSettings.SelectedControllerType;
+            DeviceType = _currentConfig.AppSettings.SelectedControllerType;
             DeviceId = "VID_045E&PID_028E"; // Пример идентификатора Xbox-контроллера
             IsDeviceActive = true; // По умолчанию устройство активно
 
@@ -340,7 +337,7 @@ namespace MapperGangNET8.ViewModels
                 
                 if (connected)
                 {
-                    DeviceType = _currentConfig?.ControllerSettings?.SelectedControllerType ?? "Xbox 360 Controller";
+                    DeviceType = _currentConfig?.AppSettings?.SelectedControllerType ?? "Xbox 360 Controller";
                     DeviceId = "VID_045E&PID_028E"; // Default Xbox 360 ID
                 }
             }

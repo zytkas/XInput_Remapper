@@ -41,7 +41,6 @@ namespace MapperGangNET8.Infrastructure.DI
             services.AddSingleton<AutoSaveService>();
 
             // Register ViewModels
-            services.AddSingleton<ControllerViewModel>();
             services.AddSingleton<MouseViewModel>();
             services.AddSingleton<KeyboardViewModel>();
             services.AddSingleton<SensitivityViewModel>();

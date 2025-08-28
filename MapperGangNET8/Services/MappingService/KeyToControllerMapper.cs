@@ -57,7 +57,9 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         public void ProcessKeyDown(int keyCode)
         {
-            System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: ProcessKeyDown - KeyCode: {keyCode}");
+            // Enhanced logging to help debug key mapping issues
+            string keyName = GetKeyNameFromCode(keyCode);
+            System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: ProcessKeyDown - KeyCode: {keyCode} ({keyName})");
             
             if (_pressedKeys.Contains(keyCode)) return; // Avoid repeat events
             
@@ -66,12 +68,12 @@ namespace MapperGangNET8.Services.MappingService
             // Check if key is mapped to a controller button
             if (_keyButtonMappings.TryGetValue(keyCode, out var button))
             {
-                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {keyCode} mapped to controller button {button} - pressing");
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {keyCode} ({keyName}) mapped to controller button {button} - pressing");
                 _controllerService.SetButton(button, true);
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {keyCode} not mapped to any controller button");
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {keyCode} ({keyName}) not mapped to any controller button");
             }
 
             // Handle directional keys for analog sticks (WASD)
@@ -132,6 +134,21 @@ namespace MapperGangNET8.Services.MappingService
         }
 
         /// <summary>
+        /// Get key name from key code for debugging
+        /// </summary>
+        private string GetKeyNameFromCode(int keyCode)
+        {
+            foreach (var kvp in InputKeyMap.KeyboardKeys)
+            {
+                if (kvp.Value == keyCode)
+                {
+                    return kvp.Key;
+                }
+            }
+            return $"Unknown({keyCode})";
+        }
+
+        /// <summary>
         /// Convert UI controller button names to enum names
         /// </summary>
         private string ConvertToEnumName(string input)
@@ -143,23 +160,23 @@ namespace MapperGangNET8.Services.MappingService
             {
                 return action.Value switch
                 {
-                    ControllerAction.AButton => "A",
-                    ControllerAction.BButton => "B",
-                    ControllerAction.XButton => "X",
-                    ControllerAction.YButton => "Y",
-                    ControllerAction.LeftBumper => "LeftShoulder",
-                    ControllerAction.RightBumper => "RightShoulder",
-                    ControllerAction.LeftTrigger => "LeftTrigger",
-                    ControllerAction.RightTrigger => "RightTrigger",
-                    ControllerAction.LeftStickPress => "LeftThumb",
-                    ControllerAction.RightStickPress => "RightThumb",
-                    ControllerAction.DPadUp => "DPadUp",
-                    ControllerAction.DPadDown => "DPadDown",
-                    ControllerAction.DPadLeft => "DPadLeft",
-                    ControllerAction.DPadRight => "DPadRight",
-                    ControllerAction.Start => "Start",
-                    ControllerAction.Back => "Back",
-                    ControllerAction.Guide => "Guide",
+                    ControllerButton.A => "A",
+                    ControllerButton.B => "B",
+                    ControllerButton.X => "X",
+                    ControllerButton.Y => "Y",
+                    ControllerButton.LeftShoulder => "LeftShoulder",
+                    ControllerButton.RightShoulder => "RightShoulder",
+                    ControllerButton.LeftTrigger => "LeftTrigger",
+                    ControllerButton.RightTrigger => "RightTrigger",
+                    ControllerButton.LeftThumb => "LeftThumb",
+                    ControllerButton.RightThumb => "RightThumb",
+                    ControllerButton.DPadUp => "DPadUp",
+                    ControllerButton.DPadDown => "DPadDown",
+                    ControllerButton.DPadLeft => "DPadLeft",
+                    ControllerButton.DPadRight => "DPadRight",
+                    ControllerButton.Start => "Start",
+                    ControllerButton.Back => "Back",
+                    ControllerButton.Guide => "Guide",
                     _ => action.Value.ToString()
                 };
             }

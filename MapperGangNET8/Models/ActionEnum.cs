@@ -2,30 +2,6 @@
 
 namespace MapperGangNET8.Models
 {
-    public enum ControllerAction
-    {
-        AButton,
-        BButton,
-        XButton,
-        YButton,
-        LeftBumper,
-        RightBumper,
-        LeftTrigger,
-        RightTrigger,
-        LeftStickX,
-        LeftStickY,
-        LeftStickPress,
-        RightStickX,
-        RightStickY,
-        RightStickPress,
-        DPadUp,
-        DPadDown,
-        DPadLeft,
-        DPadRight,
-        Start,
-        Back,
-        Guide
-    }
 
     public enum InputDeviceType
     {
@@ -81,49 +57,49 @@ namespace MapperGangNET8.Models
         /// <summary>
         /// Словарь действий контроллера с их отображаемыми названиями
         /// </summary>
-        public static readonly Dictionary<string, ControllerAction> ControllerActions = new Dictionary<string, ControllerAction>
+        public static readonly Dictionary<string, ControllerButton> ControllerActions = new Dictionary<string, ControllerButton>
         {
-            { "A Button", ControllerAction.AButton },
-            { "B Button", ControllerAction.BButton },
-            { "X Button", ControllerAction.XButton },
-            { "Y Button", ControllerAction.YButton },
-            { "Left Bumper", ControllerAction.LeftBumper },
-            { "Right Bumper", ControllerAction.RightBumper },
-            { "Left Trigger", ControllerAction.LeftTrigger },
-            { "Right Trigger", ControllerAction.RightTrigger },
-            { "Left Stick Press", ControllerAction.LeftStickPress },
-            { "Right Stick Press", ControllerAction.RightStickPress },
-            { "D-Pad Up", ControllerAction.DPadUp },
-            { "D-Pad Down", ControllerAction.DPadDown },
-            { "D-Pad Left", ControllerAction.DPadLeft },
-            { "D-Pad Right", ControllerAction.DPadRight },
-            { "Start Button", ControllerAction.Start },
-            { "Back Button", ControllerAction.Back },
-            { "Guide Button", ControllerAction.Guide }
+            { "A Button", ControllerButton.A },
+            { "B Button", ControllerButton.B },
+            { "X Button", ControllerButton.X },
+            { "Y Button", ControllerButton.Y },
+            { "Left Bumper", ControllerButton.LeftShoulder },
+            { "Right Bumper", ControllerButton.RightShoulder },
+            { "Left Trigger", ControllerButton.LeftTrigger },
+            { "Right Trigger", ControllerButton.RightTrigger },
+            { "Left Stick Press", ControllerButton.LeftThumb },
+            { "Right Stick Press", ControllerButton.RightThumb },
+            { "D-Pad Up", ControllerButton.DPadUp },
+            { "D-Pad Down", ControllerButton.DPadDown },
+            { "D-Pad Left", ControllerButton.DPadLeft },
+            { "D-Pad Right", ControllerButton.DPadRight },
+            { "Start Button", ControllerButton.Start },
+            { "Back Button", ControllerButton.Back },
+            { "Guide Button", ControllerButton.Guide }
         };
 
         /// <summary>
         /// Обратный словарь для получения отображаемого названия по enum
         /// </summary>
-        public static readonly Dictionary<ControllerAction, string> ControllerActionNames = new Dictionary<ControllerAction, string>
+        public static readonly Dictionary<ControllerButton, string> ControllerActionNames = new Dictionary<ControllerButton, string>
         {
-            { ControllerAction.AButton, "A Button" },
-            { ControllerAction.BButton, "B Button" },
-            { ControllerAction.XButton, "X Button" },
-            { ControllerAction.YButton, "Y Button" },
-            { ControllerAction.LeftBumper, "Left Bumper" },
-            { ControllerAction.RightBumper, "Right Bumper" },
-            { ControllerAction.LeftTrigger, "Left Trigger" },
-            { ControllerAction.RightTrigger, "Right Trigger" },
-            { ControllerAction.LeftStickPress, "Left Stick Press" },
-            { ControllerAction.RightStickPress, "Right Stick Press" },
-            { ControllerAction.DPadUp, "D-Pad Up" },
-            { ControllerAction.DPadDown, "D-Pad Down" },
-            { ControllerAction.DPadLeft, "D-Pad Left" },
-            { ControllerAction.DPadRight, "D-Pad Right" },
-            { ControllerAction.Start, "Start Button" },
-            { ControllerAction.Back, "Back Button" },
-            { ControllerAction.Guide, "Guide Button" }
+            { ControllerButton.A, "A Button" },
+            { ControllerButton.B, "B Button" },
+            { ControllerButton.X, "X Button" },
+            { ControllerButton.Y, "Y Button" },
+            { ControllerButton.LeftShoulder, "Left Bumper" },
+            { ControllerButton.RightShoulder, "Right Bumper" },
+            { ControllerButton.LeftTrigger, "Left Trigger" },
+            { ControllerButton.RightTrigger, "Right Trigger" },
+            { ControllerButton.LeftThumb, "Left Stick Press" },
+            { ControllerButton.RightThumb, "Right Stick Press" },
+            { ControllerButton.DPadUp, "D-Pad Up" },
+            { ControllerButton.DPadDown, "D-Pad Down" },
+            { ControllerButton.DPadLeft, "D-Pad Left" },
+            { ControllerButton.DPadRight, "D-Pad Right" },
+            { ControllerButton.Start, "Start Button" },
+            { ControllerButton.Back, "Back Button" },
+            { ControllerButton.Guide, "Guide Button" }
         };
 
         /// <summary>
@@ -175,9 +151,9 @@ namespace MapperGangNET8.Models
         /// </summary>
         /// <param name="actionName">Отображаемое название действия</param>
         /// <returns>Enum действия или null если не найдено</returns>
-        public static ControllerAction? GetControllerAction(string actionName)
+        public static ControllerButton? GetControllerAction(string actionName)
         {
-            return ControllerActions.TryGetValue(actionName, out ControllerAction action) ? action : null;
+            return ControllerActions.TryGetValue(actionName, out ControllerButton action) ? action : null;
         }
 
         /// <summary>
@@ -185,7 +161,7 @@ namespace MapperGangNET8.Models
         /// </summary>
         /// <param name="action">Enum действия</param>
         /// <returns>Отображаемое название или пустую строку если не найдено</returns>
-        public static string GetControllerActionName(ControllerAction action)
+        public static string GetControllerActionName(ControllerButton action)
         {
             return ControllerActionNames.TryGetValue(action, out string name) ? name : "";
         }

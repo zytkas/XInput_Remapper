@@ -11,6 +11,7 @@ namespace MapperGangNET8.Services.MappingService
     {
         private readonly IControllerService _controllerService;
         private readonly Dictionary<int, ControllerButton> _mouseButtonMappings = new();
+        private readonly HashSet<int> _pressedMouseButtons = new(); // Track pressed mouse buttons
         
         // Mouse tracking
         private int _lastMouseX;
@@ -121,20 +122,53 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         private void ProcessMouseButton(int button)
         {
+            // Skip if button is 0 (no button pressed) or mouse movement events
+            if (button == 0) return;
+            
             bool isPressed = button > 0;
             int buttonCode = System.Math.Abs(button);
+            
+            // Get button name for debug logging
+            string buttonName = GetMouseButtonName(buttonCode);
 
-            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: ProcessMouseButton - Button: {button}, ButtonCode: {buttonCode}, Pressed: {isPressed}");
+            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: ProcessMouseButton - Button: {button}, ButtonCode: {buttonCode} ({buttonName}), Pressed: {isPressed}");
+
+            // Skip mouse movement events that might come as button code 32
+            if (buttonCode == 32)
+            {
+                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Skipping mouse movement event (button code 32)");
+                return;
+            }
+
+            // Track button state to avoid duplicate events
+            if (isPressed)
+            {
+                if (_pressedMouseButtons.Contains(buttonCode))
+                {
+                    System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Button {buttonCode} already pressed, ignoring repeat event");
+                    return; // Avoid repeat press events
+                }
+                _pressedMouseButtons.Add(buttonCode);
+            }
+            else
+            {
+                if (!_pressedMouseButtons.Contains(buttonCode))
+                {
+                    System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Button {buttonCode} not in pressed state, ignoring release event");
+                    return; // Ignore release if not pressed
+                }
+                _pressedMouseButtons.Remove(buttonCode);
+            }
 
             // Check if mouse button is mapped to a controller button
             if (_mouseButtonMappings.TryGetValue(buttonCode, out var controllerButton))
             {
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {buttonCode} mapped to controller button {controllerButton} - setting to {isPressed}");
+                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {buttonCode} ({buttonName}) mapped to controller button {controllerButton} - setting to {isPressed}");
                 _controllerService.SetButton(controllerButton, isPressed);
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {buttonCode} not mapped to any controller button");
+                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {buttonCode} ({buttonName}) not mapped to any controller button");
             }
         }
 
@@ -144,6 +178,21 @@ namespace MapperGangNET8.Services.MappingService
         private int GetMouseButtonCodeFromString(string buttonString)
         {
             return InputKeyMap.GetMouseButtonCode(buttonString);
+        }
+
+        /// <summary>
+        /// Get mouse button name from code for debugging
+        /// </summary>
+        private string GetMouseButtonName(int buttonCode)
+        {
+            foreach (var kvp in InputKeyMap.MouseButtons)
+            {
+                if (kvp.Value == buttonCode)
+                {
+                    return kvp.Key;
+                }
+            }
+            return $"Unknown({buttonCode})";
         }
 
         /// <summary>
@@ -158,23 +207,23 @@ namespace MapperGangNET8.Services.MappingService
             {
                 return action.Value switch
                 {
-                    ControllerAction.AButton => "A",
-                    ControllerAction.BButton => "B",
-                    ControllerAction.XButton => "X",
-                    ControllerAction.YButton => "Y",
-                    ControllerAction.LeftBumper => "LeftShoulder",
-                    ControllerAction.RightBumper => "RightShoulder",
-                    ControllerAction.LeftTrigger => "LeftTrigger",
-                    ControllerAction.RightTrigger => "RightTrigger",
-                    ControllerAction.LeftStickPress => "LeftThumb",
-                    ControllerAction.RightStickPress => "RightThumb",
-                    ControllerAction.DPadUp => "DPadUp",
-                    ControllerAction.DPadDown => "DPadDown",
-                    ControllerAction.DPadLeft => "DPadLeft",
-                    ControllerAction.DPadRight => "DPadRight",
-                    ControllerAction.Start => "Start",
-                    ControllerAction.Back => "Back",
-                    ControllerAction.Guide => "Guide",
+                    ControllerButton.A => "A",
+                    ControllerButton.B => "B",
+                    ControllerButton.X => "X",
+                    ControllerButton.Y => "Y",
+                    ControllerButton.LeftShoulder => "LeftShoulder",
+                    ControllerButton.RightShoulder => "RightShoulder",
+                    ControllerButton.LeftTrigger => "LeftTrigger",
+                    ControllerButton.RightTrigger => "RightTrigger",
+                    ControllerButton.LeftThumb => "LeftThumb",
+                    ControllerButton.RightThumb => "RightThumb",
+                    ControllerButton.DPadUp => "DPadUp",
+                    ControllerButton.DPadDown => "DPadDown",
+                    ControllerButton.DPadLeft => "DPadLeft",
+                    ControllerButton.DPadRight => "DPadRight",
+                    ControllerButton.Start => "Start",
+                    ControllerButton.Back => "Back",
+                    ControllerButton.Guide => "Guide",
                     _ => action.Value.ToString()
                 };
             }
@@ -190,6 +239,7 @@ namespace MapperGangNET8.Services.MappingService
             _isFirstMouseEvent = true;
             _lastMouseX = 0;
             _lastMouseY = 0;
+            _pressedMouseButtons.Clear();
         }
     }
 }

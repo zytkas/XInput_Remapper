@@ -9,7 +9,7 @@
 
         public int InputCode { get; set; }
 
-        public ControllerAction Action { get; set; }
+        public ControllerButton Action { get; set; }
 
         public object Parameters { get; set; }
 

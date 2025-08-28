@@ -29,15 +29,13 @@
                 <ui:Button x:Name="DashboardTab" Content="Dashboard" Tag="0" Click="NavigationButton_Click"
                       Appearance="Primary" Margin="0,0,4,0" 
                       FontWeight="SemiBold" Foreground="#2076FF"/>
-                <ui:Button x:Name="ControllerTab" Content="Controller" Tag="1" Click="NavigationButton_Click"
+                <ui:Button x:Name="MouseTab" Content="Mouse" Tag="1" Click="NavigationButton_Click"
                       Appearance="Secondary" Margin="4,0"/>
-                <ui:Button x:Name="MouseTab" Content="Mouse" Tag="2" Click="NavigationButton_Click"
+                <ui:Button x:Name="KeyboardTab" Content="Keyboard" Tag="2" Click="NavigationButton_Click"
                       Appearance="Secondary" Margin="4,0"/>
-                <ui:Button x:Name="KeyboardTab" Content="Keyboard" Tag="3" Click="NavigationButton_Click"
+                <ui:Button x:Name="SensitivityTab" Content="Sensitivity" Tag="3" Click="NavigationButton_Click"
                       Appearance="Secondary" Margin="4,0"/>
-                <ui:Button x:Name="SensitivityTab" Content="Sensitivity" Tag="4" Click="NavigationButton_Click"
-                      Appearance="Secondary" Margin="4,0"/>
-                <ui:Button x:Name="SettingsTab" Content="Settings" Tag="5" Click="NavigationButton_Click"
+                <ui:Button x:Name="SettingsTab" Content="Settings" Tag="4" Click="NavigationButton_Click"
                       Appearance="Secondary" Margin="4,0"/>
             </StackPanel>
             

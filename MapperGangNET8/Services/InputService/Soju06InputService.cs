@@ -15,6 +15,9 @@ namespace MapperGangNET8.Services.InputService
         private bool _isCapturing = false;
         private bool _isBlocking = false;
         private bool _disposed = false;
+        
+        private System.Collections.Generic.HashSet<int> _keysToBlock = new System.Collections.Generic.HashSet<int>();
+        private System.Collections.Generic.HashSet<int> _mouseButtonsToBlock = new System.Collections.Generic.HashSet<int>();
 
         /// <summary>
         /// Event triggered when a key is pressed
@@ -114,6 +117,14 @@ namespace MapperGangNET8.Services.InputService
             _mouseHook.Debug = enable;
         }
 
+        public void SetKeysToBlock(System.Collections.Generic.HashSet<int> keysToBlock, System.Collections.Generic.HashSet<int> mouseButtonsToBlock)
+        {
+            _keysToBlock = keysToBlock ?? new System.Collections.Generic.HashSet<int>();
+            _mouseButtonsToBlock = mouseButtonsToBlock ?? new System.Collections.Generic.HashSet<int>();
+            
+            System.Diagnostics.Debug.WriteLine($"Soju06InputService: SetKeysToBlock - Keys to block: {string.Join(", ", _keysToBlock)}, Mouse buttons to block: {string.Join(", ", _mouseButtonsToBlock)}");
+        }
+
         private bool KeyboardKeyDown(object sender, InputKeys key, InputKeyState state)
         {
             if (IsPanicKeyCombinationPressed((int)key))
@@ -136,7 +147,12 @@ namespace MapperGangNET8.Services.InputService
 
             KeyDown?.Invoke(this, args);
 
-            return !_isBlocking;
+            // Only block keys that are explicitly mapped or WASD
+            if (_isBlocking && _keysToBlock.Contains((int)key))
+            {
+                return false; // Block this key
+            }
+            return true; // Allow pass-through
         }
 
         private bool IsPanicKeyCombinationPressed(int key)
@@ -160,7 +176,12 @@ namespace MapperGangNET8.Services.InputService
 
             KeyUp?.Invoke(this, args);
 
-            return !_isBlocking;
+            // Only block keys that are explicitly mapped or WASD
+            if (_isBlocking && _keysToBlock.Contains((int)key))
+            {
+                return false; // Block this key
+            }
+            return true; // Allow pass-through
         }
 
         private bool MouseState(object sender, InputButtons button, int x, int y)
@@ -183,7 +204,15 @@ namespace MapperGangNET8.Services.InputService
 
             MouseStateChanged?.Invoke(this, args);
 
-            return !_isBlocking;
+            // Always allow mouse movement (for right stick camera control)
+            if (button == InputButtons.None) return true;
+            
+            // Only block mouse buttons that are explicitly mapped
+            if (_isBlocking && _mouseButtonsToBlock.Contains(Math.Abs((int)button)))
+            {
+                return false; // Block this mouse button
+            }
+            return true; // Allow pass-through
         }
 
         private void StartWindowsMessagePump()

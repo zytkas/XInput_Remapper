@@ -114,20 +114,12 @@ namespace MapperGangNET8.Services.InputMappingService
             try
             {
                 // Get controller type from settings
-                ControllerType controllerType = _currentConfig?.ControllerSettings?.SelectedControllerType == "DualShock 4 Controller"
+                ControllerType controllerType = _currentConfig?.AppSettings?.SelectedControllerType == "DualShock 4 Controller"
                     ? ControllerType.DualShock4
                     : ControllerType.Xbox360;
 
-                // Get controller number from settings
+                // Controller number is now managed internally by ViGEm
                 int controllerNumber = 1;
-                if (_currentConfig?.ControllerSettings?.ControllerNumber != null)
-                {
-                    string numberStr = _currentConfig.ControllerSettings.ControllerNumber.Replace("Controller ", "");
-                    if (int.TryParse(numberStr, out int number))
-                    {
-                        controllerNumber = number;
-                    }
-                }
 
                 // Connect controller
                 return await _controllerService.ConnectAsync(controllerType, controllerNumber);

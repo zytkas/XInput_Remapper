@@ -141,6 +141,13 @@
                             <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding DebugMode}"/>
                         </Grid>
 
+                        <TextBlock Text="Controller Type" Margin="0,8,0,8"/>
+                        <ComboBox ItemsSource="{Binding AvailableControllerTypes}" 
+                                  SelectedItem="{Binding SelectedControllerType}"
+                                  Margin="0,0,0,8"/>
+                        <TextBlock Text="Select virtual controller type for ViGEm driver" 
+                                   FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,16"/>
+
                         <TextBlock Text="Input Polling Rate" Margin="0,8,0,8"/>
                         <ComboBox ItemsSource="{Binding AvailablePollingRates}" 
                                   SelectedItem="{Binding InputPollingRate}"

@@ -205,6 +205,30 @@
                             </Grid>
                         </StackPanel>
 
+                        <!-- Trigger Deadzone -->
+                        <StackPanel Margin="0,16,0,0">
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Trigger Dead Zone" Grid.Column="0"/>
+                                <TextBlock Text="{Binding TriggerDeadzone, StringFormat={}{0:F0}%}" 
+                                           HorizontalAlignment="Right" Grid.Column="2"/>
+                            </Grid>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ui:SymbolIcon Symbol="ArrowLeft24" Grid.Column="0" Margin="0,0,8,0"/>
+                                <Slider Value="{Binding TriggerDeadzone}" Minimum="0" Maximum="100" Grid.Column="1"/>
+                                <ui:SymbolIcon Symbol="ArrowRight24" Grid.Column="2" Margin="8,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+
                         <!-- Response Curve -->
                         <Grid Margin="0,16,0,8">
                             <Grid.ColumnDefinitions>

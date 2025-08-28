@@ -32,39 +32,13 @@ namespace MapperGangNET8.Models
         public string InputPollingRate { get; set; } = "1000 Hz";
 
         public string ProcessPriority { get; set; } = "High";
-    }
 
-    /// <summary>
-    /// Модель для настроек контроллера
-    /// </summary>
-    [Serializable]
-    public class ControllerSettingsModel
-    {
-
+        /// <summary>
+        /// Selected controller type for emulation
+        /// </summary>
         public string SelectedControllerType { get; set; } = "Xbox 360 Controller";
-
-        public string ControllerNumber { get; set; } = "Controller 1";
-
-        public bool VibrationEnabled { get; set; } = true;
-
-        public double VibrationStrength { get; set; } = 80;
-
-        public double ButtonPressureSensitivity { get; set; } = 75;
-
-        public double TriggerDeadzone { get; set; } = 10;
-
-        public bool HidePhysicalControllers { get; set; } = false;
-
-        public bool ExclusiveMode { get; set; } = true;
-
-        public bool PassThroughMode { get; set; } = false;
-
-        public bool CombineInputs { get; set; } = false;
-
-        public bool AutoConnect { get; set; } = true;
-
-        public string ButtonAssignmentMode { get; set; } = "Standard";
     }
+
 
     /// <summary>
     /// Model for a 2D point
@@ -116,6 +90,11 @@ namespace MapperGangNET8.Models
         /// Joystick sensitivity (0-100%)
         /// </summary>
         public double JoystickSensitivity { get; set; } = 80;
+
+        /// <summary>
+        /// Controller trigger deadzone (0-100%)
+        /// </summary>
+        public double TriggerDeadzone { get; set; } = 10;
 
         /// <summary>
         /// Joystick deadzone (0-100%)
@@ -204,7 +183,6 @@ namespace MapperGangNET8.Models
 
         public string Description { get; set; } = "Профиль по умолчанию";
 
-        public ControllerSettingsModel ControllerSettings { get; set; } = new ControllerSettingsModel();
 
         public MouseSettingsModel MouseSettings { get; set; } = new MouseSettingsModel();
 

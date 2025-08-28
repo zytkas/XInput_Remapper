@@ -18,6 +18,7 @@ namespace MapperGangNET8.ViewModels
         private double _mouseSensitivity;
         private string _selectedCurve;
         private double _curveParameter;
+        private double _triggerDeadzone;
 
         public double MouseSensitivity
         {
@@ -55,6 +56,18 @@ namespace MapperGangNET8.ViewModels
             }
         }
 
+        public double TriggerDeadzone
+        {
+            get => _triggerDeadzone;
+            set
+            {
+                if (SetProperty(ref _triggerDeadzone, value))
+                {
+                    SaveSettings();
+                }
+            }
+        }
+
         public ObservableCollection<string> AvailableCurves { get; }
 
         public ICommand ResetCommand { get; }
@@ -75,6 +88,7 @@ namespace MapperGangNET8.ViewModels
             MouseSensitivity = _currentConfig.SensitivitySettings.MouseXAxisSensitivity;
             SelectedCurve = _currentConfig.SensitivitySettings.MouseResponseCurveType;
             CurveParameter = _currentConfig.SensitivitySettings.MouseExponent;
+            TriggerDeadzone = _currentConfig.SensitivitySettings.TriggerDeadzone;
         }
 
         private async void SaveSettings()
@@ -85,6 +99,7 @@ namespace MapperGangNET8.ViewModels
             _currentConfig.SensitivitySettings.MouseYAxisSensitivity = MouseSensitivity;
             _currentConfig.SensitivitySettings.MouseResponseCurveType = SelectedCurve;
             _currentConfig.SensitivitySettings.MouseExponent = CurveParameter;
+            _currentConfig.SensitivitySettings.TriggerDeadzone = TriggerDeadzone;
 
             await _configService.SaveConfigAsync(_currentConfig);
         }
@@ -94,6 +109,7 @@ namespace MapperGangNET8.ViewModels
             MouseSensitivity = 65;
             SelectedCurve = "Linear";
             CurveParameter = 2.0;
+            TriggerDeadzone = 10.0;
         }
 
         // Метод для применения кривой к значению

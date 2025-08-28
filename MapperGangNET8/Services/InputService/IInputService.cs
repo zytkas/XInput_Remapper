@@ -53,5 +53,12 @@ namespace MapperGangNET8.Services.InputService
         /// </summary>
         /// <param name="enable">True to enable, false to disable</param>
         void EnableDebug(bool enable);
+
+        /// <summary>
+        /// Set which keys and mouse buttons should be blocked
+        /// </summary>
+        /// <param name="keysToBlock">List of key codes to block</param>
+        /// <param name="mouseButtonsToBlock">List of mouse button codes to block</param>
+        void SetKeysToBlock(System.Collections.Generic.HashSet<int> keysToBlock, System.Collections.Generic.HashSet<int> mouseButtonsToBlock);
     }
 }
