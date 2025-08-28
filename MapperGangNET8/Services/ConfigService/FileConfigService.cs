@@ -154,26 +154,26 @@ namespace MapperGangNET8.Services.ConfigService
             // Add default keyboard bindings (basic FPS-like setup)
             config.KeyboardSettings.ButtonMappings.AddRange(new[]
             {
-                new KeyboardButtonMappingModel { KeyboardKey = "Space", ControllerButton = "A" },
-                new KeyboardButtonMappingModel { KeyboardKey = "Left Ctrl", ControllerButton = "B" },
-                new KeyboardButtonMappingModel { KeyboardKey = "Left Shift", ControllerButton = "X" },
-                new KeyboardButtonMappingModel { KeyboardKey = "E", ControllerButton = "Y" },
-                new KeyboardButtonMappingModel { KeyboardKey = "Q", ControllerButton = "LeftShoulder" },
-                new KeyboardButtonMappingModel { KeyboardKey = "Tab", ControllerButton = "RightShoulder" },
-                new KeyboardButtonMappingModel { KeyboardKey = "R", ControllerButton = "LeftThumb" },
-                new KeyboardButtonMappingModel { KeyboardKey = "C", ControllerButton = "RightThumb" },
-                new KeyboardButtonMappingModel { KeyboardKey = "Escape", ControllerButton = "Back" },
-                new KeyboardButtonMappingModel { KeyboardKey = "Enter", ControllerButton = "Start" }
+                new KeyboardButtonMappingModel { KeyboardKey = "Space", ControllerButton = "A Button" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Left Ctrl", ControllerButton = "B Button" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Left Shift", ControllerButton = "X Button" },
+                new KeyboardButtonMappingModel { KeyboardKey = "E", ControllerButton = "Y Button" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Q", ControllerButton = "Left Bumper" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Tab", ControllerButton = "Right Bumper" },
+                new KeyboardButtonMappingModel { KeyboardKey = "R", ControllerButton = "Left Stick Press" },
+                new KeyboardButtonMappingModel { KeyboardKey = "C", ControllerButton = "Right Stick Press" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Esc", ControllerButton = "Back Button" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Enter", ControllerButton = "Start Button" }
             });
 
             // Add default mouse bindings
             config.MouseSettings.ButtonMappings.AddRange(new[]
             {
-                new MouseButtonMappingModel { MouseButton = "Left Button", ControllerButton = "RightTrigger" },
-                new MouseButtonMappingModel { MouseButton = "Right Button", ControllerButton = "LeftTrigger" },
-                new MouseButtonMappingModel { MouseButton = "Middle Button", ControllerButton = "Guide" },
-                new MouseButtonMappingModel { MouseButton = "Side Button 1", ControllerButton = "DPadUp" },
-                new MouseButtonMappingModel { MouseButton = "Side Button 2", ControllerButton = "DPadDown" }
+                new MouseButtonMappingModel { MouseButton = "Left Button", ControllerButton = "Right Trigger" },
+                new MouseButtonMappingModel { MouseButton = "Right Button", ControllerButton = "Left Trigger" },
+                new MouseButtonMappingModel { MouseButton = "Middle Button", ControllerButton = "Guide Button" },
+                new MouseButtonMappingModel { MouseButton = "Side Button 1", ControllerButton = "D-Pad Up" },
+                new MouseButtonMappingModel { MouseButton = "Side Button 2", ControllerButton = "D-Pad Down" }
             });
 
             return config;

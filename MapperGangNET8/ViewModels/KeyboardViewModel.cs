@@ -233,45 +233,12 @@ namespace MapperGangNET8.ViewModels
         /// <summary>
         /// Список доступных клавиш клавиатуры
         /// </summary>
-        public List<string> AvailableKeyboardKeys { get; } = new List<string>
-            {
-                "Space",
-                "Left Ctrl",
-                "Left Shift",
-                "Left Alt",
-                "Tab",
-                "Enter",
-                "Esc",
-                "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P",
-                "A", "S", "D", "F", "G", "H", "J", "K", "L",
-                "Z", "X", "C", "V", "B", "N", "M",
-                "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
-                "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12"
-            };
+        public List<string> AvailableKeyboardKeys => InputKeyMap.GetAvailableKeyboardKeys();
 
         /// <summary>
         /// Список доступных действий контроллера
         /// </summary>
-        public List<string> AvailableControllerActions { get; } = new List<string>
-            {
-                "A Button",
-                "B Button",
-                "X Button",
-                "Y Button",
-                "Left Bumper",
-                "Right Bumper",
-                "Left Trigger",
-                "Right Trigger",
-                "Left Stick Press",
-                "Right Stick Press",
-                "D-Pad Up",
-                "D-Pad Down",
-                "D-Pad Left",
-                "D-Pad Right",
-                "Start Button",
-                "Back Button",
-                "Guide Button"
-            };
+        public List<string> AvailableControllerActions => InputKeyMap.GetAvailableControllerActions();
         /// <summary>
         /// Коллекция маппингов кнопок клавиатуры
         /// </summary>

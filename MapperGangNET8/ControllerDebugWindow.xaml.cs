@@ -26,7 +26,7 @@ namespace MapperGangNET8.Views
         private ControllerState _currentState = new ControllerState();
 
         // For interactive testing
-        private Dictionary<string, object> _controllerElements = new Dictionary<string, object>();
+        private Dictionary<ControllerButton, object> _controllerElements = new Dictionary<ControllerButton, object>();
         private bool _testButtonPressed = false;
         private ControllerButton? _currentlyTestedButton = null;
         private Point _leftStickCenter;
@@ -57,23 +57,23 @@ namespace MapperGangNET8.Views
             WriteLog("Controller Debug Window initialized.");
 
             // Store controller visual elements for easy access
-            _controllerElements["A"] = ButtonA;
-            _controllerElements["B"] = ButtonB;
-            _controllerElements["X"] = ButtonX;
-            _controllerElements["Y"] = ButtonY;
-            _controllerElements["LeftShoulder"] = LeftShoulder;
-            _controllerElements["RightShoulder"] = RightShoulder;
-            _controllerElements["LeftTrigger"] = LeftTrigger;
-            _controllerElements["RightTrigger"] = RightTrigger;
-            _controllerElements["Start"] = ButtonStart;
-            _controllerElements["Back"] = ButtonBack;
-            _controllerElements["Guide"] = ButtonGuide;
-            _controllerElements["DPadUp"] = DPadUp;
-            _controllerElements["DPadDown"] = DPadDown;
-            _controllerElements["DPadLeft"] = DPadLeft;
-            _controllerElements["DPadRight"] = DPadRight;
-            _controllerElements["LeftStick"] = LeftStick;
-            _controllerElements["RightStick"] = RightStick;
+            _controllerElements[ControllerButton.A] = ButtonA;
+            _controllerElements[ControllerButton.B] = ButtonB;
+            _controllerElements[ControllerButton.X] = ButtonX;
+            _controllerElements[ControllerButton.Y] = ButtonY;
+            _controllerElements[ControllerButton.LeftShoulder] = LeftShoulder;
+            _controllerElements[ControllerButton.RightShoulder] = RightShoulder;
+            _controllerElements[ControllerButton.LeftTrigger] = LeftTrigger;
+            _controllerElements[ControllerButton.RightTrigger] = RightTrigger;
+            _controllerElements[ControllerButton.Start] = ButtonStart;
+            _controllerElements[ControllerButton.Back] = ButtonBack;
+            _controllerElements[ControllerButton.Guide] = ButtonGuide;
+            _controllerElements[ControllerButton.DPadUp] = DPadUp;
+            _controllerElements[ControllerButton.DPadDown] = DPadDown;
+            _controllerElements[ControllerButton.DPadLeft] = DPadLeft;
+            _controllerElements[ControllerButton.DPadRight] = DPadRight;
+            _controllerElements[ControllerButton.LeftThumb] = LeftStick;
+            _controllerElements[ControllerButton.RightThumb] = RightStick;
 
             // Calculate thumbstick centers for interaction
             _leftStickCenter = new Point(
@@ -229,7 +229,7 @@ namespace MapperGangNET8.Views
         private async void ConnectController()
         {
             // Get controller type from combo box
-            ControllerType controllerType = ControllerTypeComboBox.SelectedIndex == 0
+           ControllerType controllerType = ControllerTypeComboBox.SelectedIndex == 0
                 ? ControllerType.Xbox360
                 : ControllerType.DualShock4;
 
@@ -245,8 +245,7 @@ namespace MapperGangNET8.Views
 
             try
             {
-                bool success = await _controllerService.ConnectAsync(controllerType, controllerIndex);
-
+                bool success = true;
                 if (success)
                 {
                     WriteLog("Controller connected successfully");

@@ -193,42 +193,12 @@ namespace MapperGangNET8.ViewModels
         /// <summary>
         /// Список доступных кнопок мыши
         /// </summary>
-        public List<string> AvailableMouseButtons { get; } = new List<string>
-        {
-            "Left Button",
-            "Right Button",
-            "Middle Button",
-            "Side Button 1",
-            "Side Button 2",
-            "Mouse Wheel Up",
-            "Mouse Wheel Down",
-            "Extra Button 1",
-            "Extra Button 2"
-        };
+        public List<string> AvailableMouseButtons => InputKeyMap.GetAvailableMouseButtons();
 
         /// <summary>
         /// Список доступных действий контроллера
         /// </summary>
-        public List<string> AvailableControllerActions { get; } = new List<string>
-        {
-            "A Button",
-            "B Button",
-            "X Button",
-            "Y Button",
-            "Left Bumper",
-            "Right Bumper",
-            "Left Trigger",
-            "Right Trigger",
-            "Left Stick Press",
-            "Right Stick Press",
-            "D-Pad Up",
-            "D-Pad Down",
-            "D-Pad Left",
-            "D-Pad Right",
-            "Start Button",
-            "Back Button",
-            "Guide Button"
-        };
+        public List<string> AvailableControllerActions => InputKeyMap.GetAvailableControllerActions();
 
         /// <summary>
         /// Команда для удаления маппинга

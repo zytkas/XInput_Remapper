@@ -128,23 +128,7 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         private int GetKeyCodeFromString(string keyString)
         {
-            // Basic key mapping - can be expanded
-            return keyString switch
-            {
-                "A" => 65, "B" => 66, "C" => 67, "D" => 68, "E" => 69,
-                "F" => 70, "G" => 71, "H" => 72, "I" => 73, "J" => 74,
-                "K" => 75, "L" => 76, "M" => 77, "N" => 78, "O" => 79,
-                "P" => 80, "Q" => 81, "R" => 82, "S" => 83, "T" => 84,
-                "U" => 85, "V" => 86, "W" => 87, "X" => 88, "Y" => 89, "Z" => 90,
-                "Space" => 32,
-                "Left Ctrl" => 17,
-                "Left Shift" => 16,
-                "Left Alt" => 18,
-                "Enter" => 13,
-                "Tab" => 9,
-                "Escape" => 27,
-                _ => 0
-            };
+            return InputKeyMap.GetKeyCode(keyString);
         }
 
         /// <summary>
@@ -154,27 +138,33 @@ namespace MapperGangNET8.Services.MappingService
         {
             if (string.IsNullOrEmpty(input)) return "";
             
-            return input switch
+            var action = InputKeyMap.GetControllerAction(input);
+            if (action.HasValue)
             {
-                "A Button" => "A",
-                "B Button" => "B", 
-                "X Button" => "X",
-                "Y Button" => "Y",
-                "Left Bumper" => "LeftShoulder",
-                "Right Bumper" => "RightShoulder", 
-                "Left Trigger" => "LeftTrigger",
-                "Right Trigger" => "RightTrigger",
-                "Left Stick Press" => "LeftThumb",
-                "Right Stick Press" => "RightThumb",
-                "D-Pad Up" => "DPadUp",
-                "D-Pad Down" => "DPadDown", 
-                "D-Pad Left" => "DPadLeft",
-                "D-Pad Right" => "DPadRight",
-                "Start Button" => "Start",
-                "Back Button" => "Back",
-                "Guide Button" => "Guide",
-                _ => input.Replace(" ", "")
-            };
+                return action.Value switch
+                {
+                    ControllerAction.AButton => "A",
+                    ControllerAction.BButton => "B",
+                    ControllerAction.XButton => "X",
+                    ControllerAction.YButton => "Y",
+                    ControllerAction.LeftBumper => "LeftShoulder",
+                    ControllerAction.RightBumper => "RightShoulder",
+                    ControllerAction.LeftTrigger => "LeftTrigger",
+                    ControllerAction.RightTrigger => "RightTrigger",
+                    ControllerAction.LeftStickPress => "LeftThumb",
+                    ControllerAction.RightStickPress => "RightThumb",
+                    ControllerAction.DPadUp => "DPadUp",
+                    ControllerAction.DPadDown => "DPadDown",
+                    ControllerAction.DPadLeft => "DPadLeft",
+                    ControllerAction.DPadRight => "DPadRight",
+                    ControllerAction.Start => "Start",
+                    ControllerAction.Back => "Back",
+                    ControllerAction.Guide => "Guide",
+                    _ => action.Value.ToString()
+                };
+            }
+            
+            return input.Replace(" ", "");
         }
     }
 }

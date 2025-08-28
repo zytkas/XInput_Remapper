@@ -143,15 +143,7 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         private int GetMouseButtonCodeFromString(string buttonString)
         {
-            return buttonString switch
-            {
-                "Left Button" => 1,
-                "Right Button" => 2,
-                "Middle Button" => 3,
-                "Side Button 1" => 4,
-                "Side Button 2" => 5,
-                _ => 0
-            };
+            return InputKeyMap.GetMouseButtonCode(buttonString);
         }
 
         /// <summary>
@@ -161,27 +153,33 @@ namespace MapperGangNET8.Services.MappingService
         {
             if (string.IsNullOrEmpty(input)) return "";
             
-            return input switch
+            var action = InputKeyMap.GetControllerAction(input);
+            if (action.HasValue)
             {
-                "A Button" => "A",
-                "B Button" => "B", 
-                "X Button" => "X",
-                "Y Button" => "Y",
-                "Left Bumper" => "LeftShoulder",
-                "Right Bumper" => "RightShoulder", 
-                "Left Trigger" => "LeftTrigger",
-                "Right Trigger" => "RightTrigger",
-                "Left Stick Press" => "LeftThumb",
-                "Right Stick Press" => "RightThumb",
-                "D-Pad Up" => "DPadUp",
-                "D-Pad Down" => "DPadDown", 
-                "D-Pad Left" => "DPadLeft",
-                "D-Pad Right" => "DPadRight",
-                "Start Button" => "Start",
-                "Back Button" => "Back",
-                "Guide Button" => "Guide",
-                _ => input.Replace(" ", "")
-            };
+                return action.Value switch
+                {
+                    ControllerAction.AButton => "A",
+                    ControllerAction.BButton => "B",
+                    ControllerAction.XButton => "X",
+                    ControllerAction.YButton => "Y",
+                    ControllerAction.LeftBumper => "LeftShoulder",
+                    ControllerAction.RightBumper => "RightShoulder",
+                    ControllerAction.LeftTrigger => "LeftTrigger",
+                    ControllerAction.RightTrigger => "RightTrigger",
+                    ControllerAction.LeftStickPress => "LeftThumb",
+                    ControllerAction.RightStickPress => "RightThumb",
+                    ControllerAction.DPadUp => "DPadUp",
+                    ControllerAction.DPadDown => "DPadDown",
+                    ControllerAction.DPadLeft => "DPadLeft",
+                    ControllerAction.DPadRight => "DPadRight",
+                    ControllerAction.Start => "Start",
+                    ControllerAction.Back => "Back",
+                    ControllerAction.Guide => "Guide",
+                    _ => action.Value.ToString()
+                };
+            }
+            
+            return input.Replace(" ", "");
         }
 
         /// <summary>
