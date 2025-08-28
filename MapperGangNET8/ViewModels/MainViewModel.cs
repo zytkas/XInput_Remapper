@@ -7,6 +7,7 @@ using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.ProfileService;
+using MapperGangNET8.Services.InputMappingService;
 
 namespace MapperGangNET8.ViewModels
 {
@@ -14,6 +15,7 @@ namespace MapperGangNET8.ViewModels
     {
         private readonly IConfigService _configService;
         private readonly IProfileService _profileService;
+        private readonly InputMappingService _inputMappingService;
         private ConfigModel _currentConfig;
 
         #region Приватные поля
@@ -107,6 +109,9 @@ namespace MapperGangNET8.ViewModels
 
                         // Автоматически сохраняем настройки
                         _ = SaveSettingsAsync();
+                        
+                        // Уведомляем InputMappingService об изменении конфигурации
+                        _ = _inputMappingService.RefreshConfigurationAsync();
                     }
                 }
             }
@@ -129,6 +134,9 @@ namespace MapperGangNET8.ViewModels
 
                         // Автоматически сохраняем настройки
                         _ = SaveSettingsAsync();
+                        
+                        // Уведомляем InputMappingService об изменении конфигурации
+                        _ = _inputMappingService.RefreshConfigurationAsync();
                     }
                 }
             }
@@ -155,6 +163,11 @@ namespace MapperGangNET8.ViewModels
         /// Команда навигации
         /// </summary>
         public ICommand NavigateCommand { get; }
+        
+        /// <summary>
+        /// Команда запуска/остановки маппинга
+        /// </summary>
+        public ICommand ToggleMappingCommand { get; }
         #endregion
 
         // Зависимости для навигации
@@ -165,11 +178,13 @@ namespace MapperGangNET8.ViewModels
         /// </summary>
         public MainViewModel(ControllerViewModel controllerViewModel,
                             IConfigService configService,
-                            IProfileService profileService)
+                            IProfileService profileService,
+                            InputMappingService inputMappingService)
         {
             _controllerViewModel = controllerViewModel;
             _configService = configService;
             _profileService = profileService;
+            _inputMappingService = inputMappingService;
             // Инициализация свойств по умолчанию
             AvailableProfiles = new ObservableCollection<string>();
 
@@ -177,10 +192,14 @@ namespace MapperGangNET8.ViewModels
             RestartDeviceCommand = new RelayCommand(async _ => await OnRestartDevice());
             NewProfileCommand = new RelayCommand(async _ => await OnNewProfile());
             SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
+            ToggleMappingCommand = new RelayCommand(async _ => await OnToggleMapping());
             //NavigateCommand = new RelayCommand(OnNavigate);
 
             // Загрузка настроек и профилей
             _ = InitializeAsync();
+            
+            // Подключить контроллер при запуске приложения (но не активировать маппинг)
+            _ = InitializeControllerAsync();
         }
 
         /// <summary>
@@ -277,6 +296,25 @@ namespace MapperGangNET8.ViewModels
                           MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
+        /// <summary>
+        /// Обработчик команды запуска/остановки маппинга
+        /// </summary>
+        private async Task OnToggleMapping()
+        {
+            if (IsDeviceActive)
+            {
+                // Остановить маппинг (контроллер остается подключенным)
+                await _inputMappingService.SetMappingEnabledAsync(false);
+                IsDeviceActive = false;
+            }
+            else
+            {
+                // Запустить маппинг (подключит контроллер если нужно)
+                await _inputMappingService.SetMappingEnabledAsync(true);
+                IsDeviceActive = true;
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -288,6 +326,28 @@ namespace MapperGangNET8.ViewModels
 
             // Сохраняем конфигурацию
             await _configService.SaveConfigAsync(_currentConfig);
+        }
+
+        /// <summary>
+        /// Инициализация контроллера при запуске приложения
+        /// </summary>
+        private async Task InitializeControllerAsync()
+        {
+            try
+            {
+                // Подключаем контроллер заранее для быстрого запуска маппинга
+                bool connected = await _inputMappingService.ConnectControllerAsync();
+                
+                if (connected)
+                {
+                    DeviceType = _currentConfig?.ControllerSettings?.SelectedControllerType ?? "Xbox 360 Controller";
+                    DeviceId = "VID_045E&PID_028E"; // Default Xbox 360 ID
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Controller initialization failed: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -303,6 +363,9 @@ namespace MapperGangNET8.ViewModels
             // Обновляем настройки
             _currentConfig = await _configService.LoadConfigAsync();
             UpdatePropertiesFromConfig();
+            
+            // Уведомляем InputMappingService об изменении конфигурации
+            await _inputMappingService.RefreshConfigurationAsync();
         }
 
     } 

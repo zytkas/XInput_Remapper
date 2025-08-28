@@ -3,8 +3,8 @@ using System;
 using System.Windows;
 using MapperGangNET8.Infrastructure.DI;
 using MapperGangNET8.ViewModels;
-using MapperGangNET8.Services.AutoSaveService;
 using MapperGangNET8.Views;
+using MapperGangNET8.Services;
 
 namespace MapperGangNET8
 {

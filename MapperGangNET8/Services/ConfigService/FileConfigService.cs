@@ -16,7 +16,7 @@ namespace MapperGangNET8.Services.ConfigService
         public FileConfigService()
         {
             _configFolder = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
                 "MapperGang");
 
             _configFilePath = Path.Combine(_configFolder, "config.json");
@@ -38,7 +38,10 @@ namespace MapperGangNET8.Services.ConfigService
             {
                 if (!File.Exists(_configFilePath))
                 {
-                    return new ConfigModel();
+                    var defaultConfig = CreateDefaultConfig();
+                    // Save the default config so it persists
+                    await SaveConfigAsync(defaultConfig);
+                    return defaultConfig;
                 }
                 string json = await File.ReadAllTextAsync(_configFilePath);
 
@@ -139,6 +142,41 @@ namespace MapperGangNET8.Services.ConfigService
                                 MessageBoxButton.OK, MessageBoxImage.Error);
                 return await LoadConfigAsync();
             }
+        }
+
+        /// <summary>
+        /// Create default configuration with basic bindings
+        /// </summary>
+        private ConfigModel CreateDefaultConfig()
+        {
+            var config = new ConfigModel();
+
+            // Add default keyboard bindings (basic FPS-like setup)
+            config.KeyboardSettings.ButtonMappings.AddRange(new[]
+            {
+                new KeyboardButtonMappingModel { KeyboardKey = "Space", ControllerButton = "A" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Left Ctrl", ControllerButton = "B" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Left Shift", ControllerButton = "X" },
+                new KeyboardButtonMappingModel { KeyboardKey = "E", ControllerButton = "Y" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Q", ControllerButton = "LeftShoulder" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Tab", ControllerButton = "RightShoulder" },
+                new KeyboardButtonMappingModel { KeyboardKey = "R", ControllerButton = "LeftThumb" },
+                new KeyboardButtonMappingModel { KeyboardKey = "C", ControllerButton = "RightThumb" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Escape", ControllerButton = "Back" },
+                new KeyboardButtonMappingModel { KeyboardKey = "Enter", ControllerButton = "Start" }
+            });
+
+            // Add default mouse bindings
+            config.MouseSettings.ButtonMappings.AddRange(new[]
+            {
+                new MouseButtonMappingModel { MouseButton = "Left Button", ControllerButton = "RightTrigger" },
+                new MouseButtonMappingModel { MouseButton = "Right Button", ControllerButton = "LeftTrigger" },
+                new MouseButtonMappingModel { MouseButton = "Middle Button", ControllerButton = "Guide" },
+                new MouseButtonMappingModel { MouseButton = "Side Button 1", ControllerButton = "DPadUp" },
+                new MouseButtonMappingModel { MouseButton = "Side Button 2", ControllerButton = "DPadDown" }
+            });
+
+            return config;
         }
     }
 }

@@ -43,6 +43,10 @@ namespace MapperGangNET8.Models
         DPadDown,
         DPadLeft,
 
+        // Trigger buttons (for digital trigger input)
+        LeftTrigger,
+        RightTrigger,
+
         // Special buttons
         Start,
         Back,

@@ -47,10 +47,25 @@
                     <ComboBoxItem Content="Default"/>
                 </ComboBox>
 
-                <ui:Button Content="Stop" 
-                          Background="#F44336" 
+                <ui:Button x:Name="ToggleMappingButton"
+                          Command="{Binding ToggleMappingCommand}"
                           Foreground="White" 
-                          Margin="16,0,0,0"/>
+                          Margin="16,0,0,0">
+                    <ui:Button.Style>
+                        <Style TargetType="ui:Button">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDeviceActive}" Value="True">
+                                    <Setter Property="Content" Value="Stop"/>
+                                    <Setter Property="Background" Value="#F44336"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsDeviceActive}" Value="False">
+                                    <Setter Property="Content" Value="Start"/>
+                                    <Setter Property="Background" Value="#4CAF50"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ui:Button.Style>
+                </ui:Button>
             </StackPanel>
         </Grid>
         <Grid x:Name="DashboardPanel" Grid.Row="1" Margin="0,16,0,0">

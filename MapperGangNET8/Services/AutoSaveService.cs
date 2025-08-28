@@ -5,7 +5,7 @@ using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
 using Timer = System.Timers.Timer;
 
-namespace MapperGangNET8.Services.AutoSaveService
+namespace MapperGangNET8.Services
 {
     /// <summary>
     /// Сервис для автоматического сохранения настроек
