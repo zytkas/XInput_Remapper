@@ -1,7 +1,9 @@
 using System;
+using System.Linq;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ControllerService;
 using MapperGangNET8.Services.InputService;
+using MapperGangNET8.Services.InputBlockingService;
 
 namespace MapperGangNET8.Services.MappingService
 {
@@ -14,6 +16,7 @@ namespace MapperGangNET8.Services.MappingService
         private readonly IControllerService _controllerService;
         private readonly KeyToControllerMapper _keyMapper;
         private readonly MouseToStickMapper _mouseMapper;
+        private readonly InputBlockingManager _blockingManager;
         
         private bool _isEnabled;
         private bool _disposed;
@@ -25,17 +28,28 @@ namespace MapperGangNET8.Services.MappingService
             IInputService inputService,
             IControllerService controllerService,
             KeyToControllerMapper keyMapper,
-            MouseToStickMapper mouseMapper)
+            MouseToStickMapper mouseMapper,
+            InputBlockingManager blockingManager)
         {
             _inputService = inputService;
             _controllerService = controllerService;
             _keyMapper = keyMapper;
             _mouseMapper = mouseMapper;
+            _blockingManager = blockingManager;
+
+            // Set blocking manager on input service if it supports it
+            if (_inputService is Soju06InputService soju06Service)
+            {
+                soju06Service.SetInputBlockingManager(_blockingManager);
+            }
 
             // Subscribe to input events
             _inputService.KeyDown += OnKeyDown;
             _inputService.KeyUp += OnKeyUp;
             _inputService.MouseStateChanged += OnMouseStateChanged;
+            
+            // Subscribe to mouse delta events for camera control
+            _blockingManager.MouseDeltaCaptured += OnMouseDeltaCaptured;
             
             // Setup stick decay timer (60 FPS updates)
             _stickDecayTimer = new System.Timers.Timer(16); // ~60 FPS
@@ -54,6 +68,8 @@ namespace MapperGangNET8.Services.MappingService
 
             if (enabled)
             {
+                // Enable input blocking
+                _blockingManager.SetEnabled(true);
                 // Start input capture
                 _inputService.Start();
                 // Start stick decay timer
@@ -65,6 +81,8 @@ namespace MapperGangNET8.Services.MappingService
                 _stickDecayTimer.Stop();
                 // Stop input capture
                 _inputService.Stop();
+                // Disable input blocking
+                _blockingManager.SetEnabled(false);
                 // Reset controller state when disabled
                 _controllerService.ResetState();
                 // Reset mouse mapper
@@ -79,6 +97,84 @@ namespace MapperGangNET8.Services.MappingService
         {
             _keyMapper.UpdateConfiguration(config);
             _mouseMapper.UpdateConfiguration(config);
+            
+            // Update input blocking based on configuration
+            // Convert keyboard and mouse mappings to unified KeyBindingModel list for blocking
+            var allBindings = new List<KeyBindingModel>();
+            
+            // Add keyboard button mappings
+            if (config.KeyboardSettings?.ButtonMappings != null)
+            {
+                foreach (var mapping in config.KeyboardSettings.ButtonMappings)
+                {
+                    if (!string.IsNullOrEmpty(mapping.KeyboardKey))
+                    {
+                        // Convert keyboard key string to soju06 InputKeys enum code
+                        var keyCode = InputKeyMap.GetKeyCode(mapping.KeyboardKey);
+                        if (keyCode != 0)
+                        {
+                            allBindings.Add(new KeyBindingModel
+                            {
+                                InputType = InputDeviceType.Keyboard,
+                                InputCode = keyCode,
+                                Action = ControllerButton.A // Placeholder - actual action doesn't matter for blocking
+                            });
+                        }
+                    }
+                }
+            }
+            
+            // Add WASD movement keys (always blocked)
+            var movementKeys = new[]
+            {
+                config.KeyboardSettings?.MovementUp ?? "W",
+                config.KeyboardSettings?.MovementLeft ?? "A", 
+                config.KeyboardSettings?.MovementDown ?? "S",
+                config.KeyboardSettings?.MovementRight ?? "D"
+            };
+            
+            foreach (var keyStr in movementKeys)
+            {
+                var keyCode = InputKeyMap.GetKeyCode(keyStr);
+                if (keyCode != 0)
+                {
+                    allBindings.Add(new KeyBindingModel
+                    {
+                        InputType = InputDeviceType.Keyboard,
+                        InputCode = keyCode,
+                        Action = ControllerButton.A // Placeholder
+                    });
+                }
+            }
+            
+            // Add mouse button mappings
+            if (config.MouseSettings?.ButtonMappings != null)
+            {
+                foreach (var mapping in config.MouseSettings.ButtonMappings)
+                {
+                    if (!string.IsNullOrEmpty(mapping.MouseButton))
+                    {
+                        allBindings.Add(new KeyBindingModel
+                        {
+                            InputType = InputDeviceType.Mouse,
+                            InputCode = 0, // Mouse buttons handled differently
+                            Action = ControllerButton.A // Placeholder
+                        });
+                    }
+                }
+            }
+            
+            _blockingManager.UpdateBlockedKeys(allBindings);
+            
+            // Configure mouse blocking
+            // Mouse movement is always blocked and captured for right stick (camera control)
+            // Mouse buttons are blocked if they have mappings
+            bool hasMouseButtonBindings = config.MouseSettings?.ButtonMappings?.Any() ?? false;
+            _blockingManager.SetMouseBlocking(
+                blockMovement: true, // Always block mouse movement for right stick control
+                blockButtons: hasMouseButtonBindings, // Block mouse buttons if they are mapped
+                captureDeltas: true // Always capture mouse deltas for camera control
+            );
         }
         
         
@@ -114,6 +210,17 @@ namespace MapperGangNET8.Services.MappingService
 
             // Process mouse through mapper
             _mouseMapper.ProcessMouseInput(e.X, e.Y, e.Button);
+        }
+
+        /// <summary>
+        /// Handle mouse delta events for camera control
+        /// </summary>
+        private void OnMouseDeltaCaptured(object sender, MouseDeltaEventArgs e)
+        {
+            if (!_isEnabled) return;
+
+            // Process mouse deltas for camera/stick mapping
+            _mouseMapper.ProcessMouseDelta(e.DeltaX, e.DeltaY);
         }
 
         /// <summary>

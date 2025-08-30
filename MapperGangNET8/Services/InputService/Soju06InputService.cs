@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Input;
 using Input.Platforms.Windows;
 using MapperGangNET8.Models;
+using MapperGangNET8.Services.InputBlockingService;
 
 namespace MapperGangNET8.Services.InputService
 {
@@ -14,6 +15,7 @@ namespace MapperGangNET8.Services.InputService
         private readonly InputStateModel _inputState = new InputStateModel();
         private bool _isCapturing = false;
         private bool _disposed = false;
+        private InputBlockingManager _blockingManager;
         
         // Mouse event throttling to prevent performance issues
         private long _lastMouseEventTime = 0;
@@ -142,6 +144,14 @@ namespace MapperGangNET8.Services.InputService
             }
         }
 
+        /// <summary>
+        /// Set input blocking manager for controlling which inputs to block
+        /// </summary>
+        public void SetInputBlockingManager(InputBlockingManager blockingManager)
+        {
+            _blockingManager = blockingManager;
+        }
+
         public void Start()
         {
             if (_isCapturing)
@@ -218,7 +228,14 @@ namespace MapperGangNET8.Services.InputService
 
             KeyDown?.Invoke(this, args);
 
-            return true; // Always allow pass-through
+            // Check if this key should be blocked from reaching the game
+            if (_blockingManager?.ShouldBlockKey(win32Code) == true)
+            {
+                Debug.WriteLine($"Soju06InputService: Blocking key down {win32Code} from game");
+                return false; // Block from game
+            }
+
+            return true; // Allow pass-through to game
         }
 
         private bool IsPanicKeyCombinationPressed(int win32KeyCode)
@@ -248,7 +265,14 @@ namespace MapperGangNET8.Services.InputService
 
             KeyUp?.Invoke(this, args);
 
-            return true; // Always allow pass-through
+            // Check if this key should be blocked from reaching the game
+            if (_blockingManager?.ShouldBlockKey(win32Code) == true)
+            {
+                Debug.WriteLine($"Soju06InputService: Blocking key up {win32Code} from game");
+                return false; // Block from game
+            }
+
+            return true; // Allow pass-through to game
         }
 
         private bool MouseState(object sender, InputButtons button, int x, int y)
@@ -256,7 +280,7 @@ namespace MapperGangNET8.Services.InputService
             _inputState.UpdateMousePosition(x, y);
 
             // Always handle button events immediately
-            if (button != InputButtons.None)
+            if (button != InputButtons.None && button != InputButtons.Move)
             {
                 bool isPressed = button > 0;
                 int absButton = Math.Abs((int)button);
@@ -270,7 +294,7 @@ namespace MapperGangNET8.Services.InputService
                 );
                 MouseStateChanged?.Invoke(this, buttonArgs);
             }
-            else
+            else if (button == InputButtons.Move)
             {
                 // Throttle mouse movement events to prevent performance issues
                 long currentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -295,7 +319,14 @@ namespace MapperGangNET8.Services.InputService
                 }
             }
 
-            return true; // Always allow pass-through
+            // Check if mouse input should be blocked from reaching the game
+            if (_blockingManager?.ShouldBlockMouse(button, x, y) == true)
+            {
+                Debug.WriteLine($"Soju06InputService: Blocking mouse {button} at ({x}, {y}) from game");
+                return false; // Block from game
+            }
+
+            return true; // Allow pass-through to game
         }
 
         private void StartWindowsMessagePump()

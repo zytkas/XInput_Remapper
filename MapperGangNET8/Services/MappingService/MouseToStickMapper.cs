@@ -124,6 +124,37 @@ namespace MapperGangNET8.Services.MappingService
         }
 
         /// <summary>
+        /// Process mouse delta movement directly (for blocked mouse input)
+        /// </summary>
+        public void ProcessMouseDelta(int deltaX, int deltaY)
+        {
+            // Record time of mouse movement
+            _lastMouseMoveTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            // Only process if there's actual movement
+            if (deltaX != 0 || deltaY != 0)
+            {
+                // Apply sensitivity and scale
+                double moveX = (deltaX * _mouseSensitivity) / 50.0; // Adjust scale for better feel
+                double moveY = -(deltaY * _mouseSensitivity) / 50.0; // Invert Y axis
+
+                // Accumulate movement to stick position
+                _rightStickX += moveX;
+                _rightStickY += moveY;
+
+                // Clamp accumulated position to valid stick range [-1.0, 1.0]
+                _rightStickX = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickX));
+                _rightStickY = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickY));
+
+                // Apply to right stick (for camera/looking)
+                _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
+                _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
+                
+                System.Diagnostics.Debug.WriteLine($"MouseToStick Delta: ({deltaX},{deltaY}) -> Stick({_rightStickX:F3},{_rightStickY:F3})");
+            }
+        }
+
+        /// <summary>
         /// Process mouse movement and map to right stick
         /// </summary>
         private void ProcessMouseMovement(int x, int y)
