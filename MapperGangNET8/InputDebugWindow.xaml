@@ -17,7 +17,6 @@
             <TextBlock Text="Input Service Debug" FontWeight="Bold" FontSize="18" Margin="0,0,0,10"/>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                 <ui:ToggleSwitch x:Name="CaptureToggle" Content="Capture Input" Margin="0,0,20,0" Checked="CaptureToggle_Checked" Unchecked="CaptureToggle_Unchecked"/>
-                <ui:ToggleSwitch x:Name="BlockToggle" Content="Block Input" Margin="0,0,20,0" Checked="BlockToggle_Checked" Unchecked="BlockToggle_Unchecked"/>
                 <ui:ToggleSwitch x:Name="DebugToggle" Content="Debug Mode" Margin="0,0,20,0" Checked="DebugToggle_Checked" Unchecked="DebugToggle_Unchecked"/>
                 <ui:Button Content="Clear Log" Margin="0,0,0,0" Click="ClearLog_Click"/>
             </StackPanel>

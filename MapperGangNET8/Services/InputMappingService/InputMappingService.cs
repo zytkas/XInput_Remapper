@@ -82,13 +82,13 @@ namespace MapperGangNET8.Services.InputMappingService
                     if (!connected) return; // Failed to connect
                 }
                 
-                // Enable input pipeline (this will block inputs and start mapping)
+                // Enable input pipeline (this will start input capture and mapping)
                 _inputPipeline.SetEnabled(true);
                 _isMappingEnabled = true;
             }
             else
             {
-                // Disable input pipeline (this will unblock inputs and stop mapping)
+                // Disable input pipeline (this will stop input capture and mapping)
                 _inputPipeline.SetEnabled(false);
                 _isMappingEnabled = false;
                 // Note: Controller stays connected!

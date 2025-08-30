@@ -17,6 +17,9 @@ namespace MapperGangNET8.Services.MappingService
         
         private bool _isEnabled;
         private bool _disposed;
+        
+        // Timer for mouse stick decay updates
+        private readonly System.Timers.Timer _stickDecayTimer;
 
         public InputPipeline(
             IInputService inputService,
@@ -33,6 +36,11 @@ namespace MapperGangNET8.Services.MappingService
             _inputService.KeyDown += OnKeyDown;
             _inputService.KeyUp += OnKeyUp;
             _inputService.MouseStateChanged += OnMouseStateChanged;
+            
+            // Setup stick decay timer (60 FPS updates)
+            _stickDecayTimer = new System.Timers.Timer(16); // ~60 FPS
+            _stickDecayTimer.Elapsed += OnStickDecayTimerElapsed;
+            _stickDecayTimer.AutoReset = true;
         }
 
         /// <summary>
@@ -46,22 +54,21 @@ namespace MapperGangNET8.Services.MappingService
 
             if (enabled)
             {
-                // Ensure WASD is always blocked for left stick control
-                EnsureWASDBlocked();
-                
                 // Start input capture
                 _inputService.Start();
-                // Enable input blocking (reWASD-like behavior)
-                _inputService.SetInputBlocking(true);
+                // Start stick decay timer
+                _stickDecayTimer.Start();
             }
             else
             {
-                // Disable input blocking first (restore normal input)
-                _inputService.SetInputBlocking(false);
+                // Stop stick decay timer
+                _stickDecayTimer.Stop();
                 // Stop input capture
                 _inputService.Stop();
                 // Reset controller state when disabled
                 _controllerService.ResetState();
+                // Reset mouse mapper
+                _mouseMapper.Reset();
             }
         }
 
@@ -72,74 +79,9 @@ namespace MapperGangNET8.Services.MappingService
         {
             _keyMapper.UpdateConfiguration(config);
             _mouseMapper.UpdateConfiguration(config);
-            
-            // Update which keys should be blocked
-            UpdateBlockedKeys(config);
         }
         
-        /// <summary>
-        /// Ensure WASD keys are always blocked for left stick control
-        /// </summary>
-        private void EnsureWASDBlocked()
-        {
-            var keysToBlock = new System.Collections.Generic.HashSet<int>();
-            var mouseButtonsToBlock = new System.Collections.Generic.HashSet<int>();
-            
-            // Always block WASD for left stick control
-            keysToBlock.Add(87); // W
-            keysToBlock.Add(65); // A  
-            keysToBlock.Add(83); // S
-            keysToBlock.Add(68); // D
-            
-            System.Diagnostics.Debug.WriteLine("InputPipeline: Ensuring WASD keys are blocked for left stick control");
-            _inputService.SetKeysToBlock(keysToBlock, mouseButtonsToBlock);
-        }
         
-        /// <summary>
-        /// Update the list of keys and mouse buttons to block based on configuration
-        /// </summary>
-        private void UpdateBlockedKeys(ConfigModel config)
-        {
-            var keysToBlock = new System.Collections.Generic.HashSet<int>();
-            var mouseButtonsToBlock = new System.Collections.Generic.HashSet<int>();
-            
-            // Always block WASD for left stick control
-            keysToBlock.Add(87); // W
-            keysToBlock.Add(65); // A  
-            keysToBlock.Add(83); // S
-            keysToBlock.Add(68); // D
-            
-            // Add mapped keyboard keys
-            if (config?.KeyboardSettings?.ButtonMappings != null)
-            {
-                foreach (var mapping in config.KeyboardSettings.ButtonMappings)
-                {
-                    int keyCode = InputKeyMap.GetKeyCode(mapping.KeyboardKey);
-                    if (keyCode > 0)
-                    {
-                        keysToBlock.Add(keyCode);
-                    }
-                }
-            }
-            
-            // Add mapped mouse buttons
-            if (config?.MouseSettings?.ButtonMappings != null)
-            {
-                foreach (var mapping in config.MouseSettings.ButtonMappings)
-                {
-                    int mouseButtonCode = InputKeyMap.GetMouseButtonCode(mapping.MouseButton);
-                    if (mouseButtonCode > 0)
-                    {
-                        mouseButtonsToBlock.Add(mouseButtonCode);
-                    }
-                }
-            }
-            
-            System.Diagnostics.Debug.WriteLine($"InputPipeline: Updating blocked keys - Total keys: {keysToBlock.Count}, Total mouse buttons: {mouseButtonsToBlock.Count}");
-            
-            // Update input service with keys to block
-            _inputService.SetKeysToBlock(keysToBlock, mouseButtonsToBlock);
-        }
 
         /// <summary>
         /// Handle key down events
@@ -175,12 +117,27 @@ namespace MapperGangNET8.Services.MappingService
         }
 
         /// <summary>
+        /// Handle stick decay timer events
+        /// </summary>
+        private void OnStickDecayTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (_isEnabled)
+            {
+                _mouseMapper.UpdateStickDecay();
+            }
+        }
+        
+        /// <summary>
         /// Dispose resources
         /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
 
+            // Stop and dispose timer
+            _stickDecayTimer?.Stop();
+            _stickDecayTimer?.Dispose();
+            
             // Unsubscribe from events
             _inputService.KeyDown -= OnKeyDown;
             _inputService.KeyUp -= OnKeyUp;

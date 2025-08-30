@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ControllerService;
+using Input;
 
 namespace MapperGangNET8.Services.MappingService
 {
@@ -10,8 +11,9 @@ namespace MapperGangNET8.Services.MappingService
     public class KeyToControllerMapper
     {
         private readonly IControllerService _controllerService;
-        private readonly Dictionary<int, ControllerButton> _keyButtonMappings = new();
-        private readonly HashSet<int> _pressedKeys = new();
+        private readonly Dictionary<InputKeys, ControllerButton> _keyButtonMappings = new();
+        private readonly Dictionary<InputKeys, ControllerAxis> _keyAxisMappings = new();
+        private readonly HashSet<InputKeys> _pressedKeys = new();
 
         public KeyToControllerMapper(IControllerService controllerService)
         {
@@ -24,6 +26,7 @@ namespace MapperGangNET8.Services.MappingService
         public void UpdateConfiguration(ConfigModel config)
         {
             _keyButtonMappings.Clear();
+            _keyAxisMappings.Clear();
 
             if (config?.KeyboardSettings?.ButtonMappings == null) 
             {
@@ -33,47 +36,78 @@ namespace MapperGangNET8.Services.MappingService
 
             foreach (var mapping in config.KeyboardSettings.ButtonMappings)
             {
-                int keyCode = GetKeyCodeFromString(mapping.KeyboardKey);
+                InputKeys inputKey = GetInputKeyFromString(mapping.KeyboardKey);
                 string enumName = ConvertToEnumName(mapping.ControllerButton);
                 
-                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Processing mapping - Key: {mapping.KeyboardKey} (Code: {keyCode}) -> Controller: {mapping.ControllerButton} (Enum: {enumName})");
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Processing mapping - Key: {mapping.KeyboardKey} (InputKey: {inputKey}) -> Controller: {mapping.ControllerButton} (Enum: {enumName})");
                 
-                if (keyCode > 0 && System.Enum.TryParse<ControllerButton>(enumName, out var button))
+                // Check what GetControllerAction returns
+                var controllerAction = InputKeyMap.GetControllerAction(mapping.ControllerButton);
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: GetControllerAction(\"{mapping.ControllerButton}\") returned: {controllerAction}");
+                
+                if (inputKey != InputKeys.None)
                 {
-                    _keyButtonMappings[keyCode] = button;
-                    System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Successfully mapped key {keyCode} to controller button {button}");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Failed to map - KeyCode: {keyCode}, EnumName: {enumName}");
+                    // Check if this is a trigger (should be mapped to axis)
+                    if (enumName == "LeftTrigger")
+                    {
+                        _keyAxisMappings[inputKey] = ControllerAxis.LeftTrigger;
+                        System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Successfully mapped key {inputKey} to left trigger axis");
+                    }
+                    else if (enumName == "RightTrigger")
+                    {
+                        _keyAxisMappings[inputKey] = ControllerAxis.RightTrigger;
+                        System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Successfully mapped key {inputKey} to right trigger axis");
+                    }
+                    else if (System.Enum.TryParse<ControllerButton>(enumName, out var button))
+                    {
+                        _keyButtonMappings[inputKey] = button;
+                        System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Successfully mapped key {inputKey} to controller button {button}");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Failed to map - InputKey: {inputKey}, EnumName: {enumName}");
+                    }
                 }
             }
             
-            System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Total mappings loaded: {_keyButtonMappings.Count}");
+            System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Total button mappings loaded: {_keyButtonMappings.Count}, axis mappings: {_keyAxisMappings.Count}");
         }
 
         /// <summary>
-        /// Process key down event
+        /// Process key down event using InputKeys enum
         /// </summary>
         public void ProcessKeyDown(int keyCode)
         {
-            // Enhanced logging to help debug key mapping issues
-            string keyName = GetKeyNameFromCode(keyCode);
-            System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: ProcessKeyDown - KeyCode: {keyCode} ({keyName})");
+            // Convert keyCode to InputKeys enum
+            if (!System.Enum.IsDefined(typeof(InputKeys), (byte)keyCode))
+            {
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Unknown InputKeys code: {keyCode}");
+                return;
+            }
             
-            if (_pressedKeys.Contains(keyCode)) return; // Avoid repeat events
+            InputKeys inputKey = (InputKeys)(byte)keyCode;
+            string keyName = GetKeyNameFromInputKey(inputKey);
+            System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: ProcessKeyDown - InputKey: {inputKey} ({keyName})");
             
-            _pressedKeys.Add(keyCode);
+            if (_pressedKeys.Contains(inputKey)) return; // Avoid repeat events
+            
+            _pressedKeys.Add(inputKey);
 
             // Check if key is mapped to a controller button
-            if (_keyButtonMappings.TryGetValue(keyCode, out var button))
+            if (_keyButtonMappings.TryGetValue(inputKey, out var button))
             {
-                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {keyCode} ({keyName}) mapped to controller button {button} - pressing");
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {inputKey} ({keyName}) mapped to controller button {button} - pressing");
                 _controllerService.SetButton(button, true);
+            }
+            // Check if key is mapped to a controller axis (like triggers)
+            else if (_keyAxisMappings.TryGetValue(inputKey, out var axis))
+            {
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {inputKey} ({keyName}) mapped to controller axis {axis} - activating");
+                _controllerService.SetAxis(axis, 1.0); // Full press for digital key
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {keyCode} ({keyName}) not mapped to any controller button");
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Key {inputKey} ({keyName}) not mapped to any controller input");
             }
 
             // Handle directional keys for analog sticks (WASD)
@@ -81,16 +115,29 @@ namespace MapperGangNET8.Services.MappingService
         }
 
         /// <summary>
-        /// Process key up event
+        /// Process key up event using InputKeys enum
         /// </summary>
         public void ProcessKeyUp(int keyCode)
         {
-            _pressedKeys.Remove(keyCode);
+            // Convert keyCode to InputKeys enum
+            if (!System.Enum.IsDefined(typeof(InputKeys), (byte)keyCode))
+            {
+                System.Diagnostics.Debug.WriteLine($"KeyToControllerMapper: Unknown InputKeys code: {keyCode}");
+                return;
+            }
+            
+            InputKeys inputKey = (InputKeys)(byte)keyCode;
+            _pressedKeys.Remove(inputKey);
 
             // Check if key is mapped to a controller button
-            if (_keyButtonMappings.TryGetValue(keyCode, out var button))
+            if (_keyButtonMappings.TryGetValue(inputKey, out var button))
             {
                 _controllerService.SetButton(button, false);
+            }
+            // Check if key is mapped to a controller axis (like triggers)
+            else if (_keyAxisMappings.TryGetValue(inputKey, out var axis))
+            {
+                _controllerService.SetAxis(axis, 0.0); // Release trigger
             }
 
             // Handle directional keys for analog sticks (WASD)
@@ -102,11 +149,11 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         private void UpdateAnalogSticks()
         {
-            // WASD mapping for left stick
-            bool w = _pressedKeys.Contains(GetKeyCodeFromString("W"));
-            bool a = _pressedKeys.Contains(GetKeyCodeFromString("A"));
-            bool s = _pressedKeys.Contains(GetKeyCodeFromString("S"));
-            bool d = _pressedKeys.Contains(GetKeyCodeFromString("D"));
+            // WASD mapping for left stick using InputKeys enum
+            bool w = _pressedKeys.Contains(InputKeys.W);
+            bool a = _pressedKeys.Contains(InputKeys.A);
+            bool s = _pressedKeys.Contains(InputKeys.S);
+            bool d = _pressedKeys.Contains(InputKeys.D);
 
             // Calculate stick position
             double x = (d ? 1.0 : 0.0) - (a ? 1.0 : 0.0);
@@ -126,26 +173,19 @@ namespace MapperGangNET8.Services.MappingService
         }
 
         /// <summary>
-        /// Convert key string to virtual key code
+        /// Convert key string to InputKeys enum
         /// </summary>
-        private int GetKeyCodeFromString(string keyString)
+        private InputKeys GetInputKeyFromString(string keyString)
         {
-            return InputKeyMap.GetKeyCode(keyString);
+            return InputKeyMap.GetInputKey(keyString);
         }
 
         /// <summary>
-        /// Get key name from key code for debugging
+        /// Get key name from InputKeys enum for debugging
         /// </summary>
-        private string GetKeyNameFromCode(int keyCode)
+        private string GetKeyNameFromInputKey(InputKeys inputKey)
         {
-            foreach (var kvp in InputKeyMap.KeyboardKeys)
-            {
-                if (kvp.Value == keyCode)
-                {
-                    return kvp.Key;
-                }
-            }
-            return $"Unknown({keyCode})";
+            return InputKeyMap.GetKeyboardKeyName(inputKey);
         }
 
         /// <summary>

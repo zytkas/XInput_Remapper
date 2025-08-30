@@ -14,6 +14,12 @@ namespace MapperGangNET8.Views
         private readonly StringBuilder _logBuilder = new StringBuilder();
         private readonly InputStateModel _inputState = new InputStateModel();
         private readonly DispatcherTimer _updateTimer;
+        private int _logUpdateCounter = 0;
+        private const int LOG_UPDATE_THROTTLE = 5; // Update UI every 5th log entry
+        
+        // Reuse StringBuilder instances to reduce GC pressure
+        private readonly StringBuilder _kbStateBuilder = new StringBuilder();
+        private readonly StringBuilder _mouseStateBuilder = new StringBuilder();
 
         public InputDebugWindow(IInputService inputService)
         {
@@ -27,13 +33,12 @@ namespace MapperGangNET8.Views
 
             _updateTimer = new DispatcherTimer
             {
-                Interval = TimeSpan.FromMilliseconds(100)
+                Interval = TimeSpan.FromMilliseconds(250)
             };
             _updateTimer.Tick += UpdateUI;
             _updateTimer.Start();
 
             CaptureToggle.IsChecked = false;
-            BlockToggle.IsChecked = false;
             DebugToggle.IsChecked = true;
 
             _inputService.EnableDebug(true);
@@ -53,17 +58,6 @@ namespace MapperGangNET8.Views
             WriteLog("Input capturing stopped");
         }
 
-        private void BlockToggle_Checked(object sender, RoutedEventArgs e)
-        {
-            _inputService.SetInputBlocking(true);
-            WriteLog("Input blocking enabled");
-        }
-
-        private void BlockToggle_Unchecked(object sender, RoutedEventArgs e)
-        {
-            _inputService.SetInputBlocking(false);
-            WriteLog("Input blocking disabled");
-        }
 
         private void DebugToggle_Checked(object sender, RoutedEventArgs e)
         {
@@ -111,7 +105,8 @@ namespace MapperGangNET8.Views
             }
             else
             {
-                if (_inputState.MouseDeltaX % 5 == 0 || _inputState.MouseDeltaY % 5 == 0)
+                // Only log mouse movement occasionally to reduce performance impact
+                if (Math.Abs(_inputState.MouseDeltaX) > 10 || Math.Abs(_inputState.MouseDeltaY) > 10)
                 {
                     WriteLog($"Mouse Move: X={e.X}, Y={e.Y}, DeltaX={_inputState.MouseDeltaX}, DeltaY={_inputState.MouseDeltaY}");
                 }
@@ -123,45 +118,55 @@ namespace MapperGangNET8.Views
             string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
             _logBuilder.AppendLine($"[{timestamp}] {message}");
 
-            string[] lines = _logBuilder.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
-            if (lines.Length > 500)
+            // Throttle UI updates to improve performance
+            _logUpdateCounter++;
+            if (_logUpdateCounter >= LOG_UPDATE_THROTTLE)
             {
-                _logBuilder.Clear();
-                for (int i = lines.Length - 500; i < lines.Length; i++)
+                _logUpdateCounter = 0;
+                
+                // Limit log size more efficiently
+                if (_logBuilder.Length > 50000) // ~500 lines
                 {
-                    if (!string.IsNullOrEmpty(lines[i]))
-                        _logBuilder.AppendLine(lines[i]);
+                    string currentLog = _logBuilder.ToString();
+                    int halfPoint = currentLog.Length / 2;
+                    int newlineIndex = currentLog.IndexOf(Environment.NewLine, halfPoint);
+                    if (newlineIndex > 0)
+                    {
+                        _logBuilder.Clear();
+                        _logBuilder.Append(currentLog.Substring(newlineIndex + Environment.NewLine.Length));
+                    }
                 }
-            }
 
-            LogTextBox.Text = _logBuilder.ToString();
-            LogTextBox.ScrollToEnd();
+                LogTextBox.Text = _logBuilder.ToString();
+                LogTextBox.ScrollToEnd();
+            }
         }
 
         private void UpdateUI(object sender, EventArgs e)
         {
-            StringBuilder kbState = new StringBuilder();
+            // Reuse StringBuilder to reduce GC pressure
+            _kbStateBuilder.Clear();
             foreach (var key in _inputState.PressedKeys)
             {
                 if (key.Value)
                 {
-                    kbState.AppendLine($"Key: {key.Key} is pressed");
+                    _kbStateBuilder.AppendLine($"Key: {key.Key} is pressed");
                 }
             }
-            KeyboardStateTextBox.Text = kbState.ToString();
+            KeyboardStateTextBox.Text = _kbStateBuilder.ToString();
 
-            StringBuilder mouseState = new StringBuilder();
-            mouseState.AppendLine($"Position: X={_inputState.MouseX}, Y={_inputState.MouseY}");
-            mouseState.AppendLine($"Delta: X={_inputState.MouseDeltaX}, Y={_inputState.MouseDeltaY}");
+            _mouseStateBuilder.Clear();
+            _mouseStateBuilder.AppendLine($"Position: X={_inputState.MouseX}, Y={_inputState.MouseY}");
+            _mouseStateBuilder.AppendLine($"Delta: X={_inputState.MouseDeltaX}, Y={_inputState.MouseDeltaY}");
 
             foreach (var button in _inputState.PressedMouseButtons)
             {
                 if (button.Value)
                 {
-                    mouseState.AppendLine($"Button: {button.Key} is pressed");
+                    _mouseStateBuilder.AppendLine($"Button: {button.Key} is pressed");
                 }
             }
-            MouseStateTextBox.Text = mouseState.ToString();
+            MouseStateTextBox.Text = _mouseStateBuilder.ToString();
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

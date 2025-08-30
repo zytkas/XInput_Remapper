@@ -38,27 +38,9 @@ namespace MapperGangNET8.Services.InputService
         bool IsCapturing { get; }
 
         /// <summary>
-        /// Block input from reaching other applications
-        /// </summary>
-        /// <param name="block">True to block, false to allow pass-through</param>
-        void SetInputBlocking(bool block);
-
-        /// <summary>
-        /// Gets whether input is being blocked
-        /// </summary>
-        bool IsBlocking { get; }
-
-        /// <summary>
         /// Enable debugging of input hooks
         /// </summary>
         /// <param name="enable">True to enable, false to disable</param>
         void EnableDebug(bool enable);
-
-        /// <summary>
-        /// Set which keys and mouse buttons should be blocked
-        /// </summary>
-        /// <param name="keysToBlock">List of key codes to block</param>
-        /// <param name="mouseButtonsToBlock">List of mouse button codes to block</param>
-        void SetKeysToBlock(System.Collections.Generic.HashSet<int> keysToBlock, System.Collections.Generic.HashSet<int> mouseButtonsToBlock);
     }
 }

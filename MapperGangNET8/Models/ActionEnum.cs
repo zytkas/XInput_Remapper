@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Input;
 
 namespace MapperGangNET8.Models
 {
@@ -16,42 +17,49 @@ namespace MapperGangNET8.Models
     public static class InputKeyMap
     {
         /// <summary>
-        /// Словарь клавиш клавиатуры с их виртуальными кодами
+        /// Словарь клавиш клавиатуры с их InputKeys enum значениями
         /// </summary>
-        public static readonly Dictionary<string, int> KeyboardKeys = new Dictionary<string, int>
+        public static readonly Dictionary<string, InputKeys> KeyboardKeys = new Dictionary<string, InputKeys>
         {
-            { "Space", 32 },
-            { "Left Ctrl", 17 },
-            { "Left Shift", 16 },
-            { "Left Alt", 18 },
-            { "Tab", 9 },
-            { "Enter", 13 },
-            { "Esc", 27 },
+            { "Space", InputKeys.Space },
+            { "Left Ctrl", InputKeys.LeftControl },
+            { "Left Shift", InputKeys.LeftShift },
+            { "Left Alt", InputKeys.LeftAlt },
+            { "Right Ctrl", InputKeys.RightControl },
+            { "Right Shift", InputKeys.RightShift },
+            { "Right Alt", InputKeys.RightAlt },
+            { "Tab", InputKeys.Tab },
+            { "Enter", InputKeys.Enter },
+            { "Esc", InputKeys.Escape },
+            { "Backspace", InputKeys.Backspace },
             // Буквы
-            { "Q", 81 }, { "W", 87 }, { "E", 69 }, { "R", 82 }, { "T", 84 }, { "Y", 89 }, { "U", 85 }, { "I", 73 }, { "O", 79 }, { "P", 80 },
-            { "A", 65 }, { "S", 83 }, { "D", 68 }, { "F", 70 }, { "G", 71 }, { "H", 72 }, { "J", 74 }, { "K", 75 }, { "L", 76 },
-            { "Z", 90 }, { "X", 88 }, { "C", 67 }, { "V", 86 }, { "B", 66 }, { "N", 78 }, { "M", 77 },
+            { "Q", InputKeys.Q }, { "W", InputKeys.W }, { "E", InputKeys.E }, { "R", InputKeys.R }, { "T", InputKeys.T }, { "Y", InputKeys.Y }, { "U", InputKeys.U }, { "I", InputKeys.I }, { "O", InputKeys.O }, { "P", InputKeys.P },
+            { "A", InputKeys.A }, { "S", InputKeys.S }, { "D", InputKeys.D }, { "F", InputKeys.F }, { "G", InputKeys.G }, { "H", InputKeys.H }, { "J", InputKeys.J }, { "K", InputKeys.K }, { "L", InputKeys.L },
+            { "Z", InputKeys.Z }, { "X", InputKeys.X }, { "C", InputKeys.C }, { "V", InputKeys.V }, { "B", InputKeys.B }, { "N", InputKeys.N }, { "M", InputKeys.M },
             // Цифры
-            { "1", 49 }, { "2", 50 }, { "3", 51 }, { "4", 52 }, { "5", 53 }, { "6", 54 }, { "7", 55 }, { "8", 56 }, { "9", 57 }, { "0", 48 },
+            { "1", InputKeys.D1 }, { "2", InputKeys.D2 }, { "3", InputKeys.D3 }, { "4", InputKeys.D4 }, { "5", InputKeys.D5 }, { "6", InputKeys.D6 }, { "7", InputKeys.D7 }, { "8", InputKeys.D8 }, { "9", InputKeys.D9 }, { "0", InputKeys.D0 },
             // Функциональные клавиши
-            { "F1", 112 }, { "F2", 113 }, { "F3", 114 }, { "F4", 115 }, { "F5", 116 }, { "F6", 117 },
-            { "F7", 118 }, { "F8", 119 }, { "F9", 120 }, { "F10", 121 }, { "F11", 122 }, { "F12", 123 }
+            { "F1", InputKeys.F1 }, { "F2", InputKeys.F2 }, { "F3", InputKeys.F3 }, { "F4", InputKeys.F4 }, { "F5", InputKeys.F5 }, { "F6", InputKeys.F6 },
+            { "F7", InputKeys.F7 }, { "F8", InputKeys.F8 }, { "F9", InputKeys.F9 }, { "F10", InputKeys.F10 }, { "F11", InputKeys.F11 }, { "F12", InputKeys.F12 },
+            // Стрелки
+            { "Up", InputKeys.Up }, { "Down", InputKeys.Down }, { "Left", InputKeys.Left }, { "Right", InputKeys.Right },
+            // Дополнительные клавиши
+            { "Insert", InputKeys.Insert }, { "Delete", InputKeys.Delete }, { "Home", InputKeys.Home }, { "End", InputKeys.End },
+            { "Page Up", InputKeys.PageUp }, { "Page Down", InputKeys.PageDown }, { "Caps Lock", InputKeys.CapsLock }
         };
 
         /// <summary>
-        /// Словарь кнопок мыши с их кодами
+        /// Словарь кнопок мыши с их InputButtons enum значениями
         /// </summary>
-        public static readonly Dictionary<string, int> MouseButtons = new Dictionary<string, int>
+        public static readonly Dictionary<string, InputButtons> MouseButtons = new Dictionary<string, InputButtons>
         {
-            { "Left Button", 1 },
-            { "Right Button", 2 },
-            { "Middle Button", 4 },
-            { "Side Button 1", 8 },
-            { "Side Button 2", 16 },
-            { "Mouse Wheel Up", 120 },
-            { "Mouse Wheel Down", -120 },
-            { "Extra Button 1", 32 },
-            { "Extra Button 2", 64 }
+            { "Left Button", InputButtons.LeftMouseDown },
+            { "Right Button", InputButtons.RightMouseDown },
+            { "Mouse Wheel Up", InputButtons.WheelUp },
+            { "Mouse Wheel Down", InputButtons.WheelDown },
+            { "Mouse Wheel Move Up", InputButtons.WheelMoveUp },
+            { "Mouse Wheel Move Down", InputButtons.WheelMoveDown },
+            { "Left Double Click", InputButtons.LeftDoubleClick }
         };
 
         /// <summary>
@@ -111,11 +119,45 @@ namespace MapperGangNET8.Models
         }
 
         /// <summary>
+        /// Получить название клавиши по InputKeys enum
+        /// </summary>
+        /// <param name="inputKey">InputKeys enum</param>
+        /// <returns>Название клавиши или пустую строку если не найдено</returns>
+        public static string GetKeyboardKeyName(InputKeys inputKey)
+        {
+            foreach (var kvp in KeyboardKeys)
+            {
+                if (kvp.Value == inputKey)
+                {
+                    return kvp.Key;
+                }
+            }
+            return "";
+        }
+
+        /// <summary>
         /// Получить список всех доступных кнопок мыши
         /// </summary>
         public static List<string> GetAvailableMouseButtons()
         {
             return new List<string>(MouseButtons.Keys);
+        }
+
+        /// <summary>
+        /// Получить название кнопки мыши по InputButtons enum
+        /// </summary>
+        /// <param name="inputButton">InputButtons enum</param>
+        /// <returns>Название кнопки или пустую строку если не найдено</returns>
+        public static string GetMouseButtonName(InputButtons inputButton)
+        {
+            foreach (var kvp in MouseButtons)
+            {
+                if (kvp.Value == inputButton)
+                {
+                    return kvp.Key;
+                }
+            }
+            return "";
         }
 
         /// <summary>
@@ -127,23 +169,45 @@ namespace MapperGangNET8.Models
         }
 
         /// <summary>
-        /// Получить виртуальный код клавиши по её названию
+        /// Получить InputKeys enum по названию клавиши
+        /// </summary>
+        /// <param name="keyName">Название клавиши</param>
+        /// <returns>InputKeys enum или None если клавиша не найдена</returns>
+        public static InputKeys GetInputKey(string keyName)
+        {
+            return KeyboardKeys.TryGetValue(keyName, out InputKeys key) ? key : InputKeys.None;
+        }
+
+        /// <summary>
+        /// Получить виртуальный код клавиши по её названию (для обратной совместимости)
         /// </summary>
         /// <param name="keyName">Название клавиши</param>
         /// <returns>Виртуальный код или 0 если клавиша не найдена</returns>
         public static int GetKeyCode(string keyName)
         {
-            return KeyboardKeys.TryGetValue(keyName, out int code) ? code : 0;
+            var inputKey = GetInputKey(keyName);
+            return inputKey != InputKeys.None ? (int)inputKey : 0;
         }
 
         /// <summary>
-        /// Получить код кнопки мыши по её названию
+        /// Получить InputButtons enum по названию кнопки мыши
+        /// </summary>
+        /// <param name="buttonName">Название кнопки</param>
+        /// <returns>InputButtons enum или None если кнопка не найдена</returns>
+        public static InputButtons GetInputMouseButton(string buttonName)
+        {
+            return MouseButtons.TryGetValue(buttonName, out InputButtons button) ? button : InputButtons.None;
+        }
+
+        /// <summary>
+        /// Получить код кнопки мыши по её названию (для обратной совместимости)
         /// </summary>
         /// <param name="buttonName">Название кнопки</param>
         /// <returns>Код кнопки или 0 если не найдена</returns>
         public static int GetMouseButtonCode(string buttonName)
         {
-            return MouseButtons.TryGetValue(buttonName, out int code) ? code : 0;
+            var inputButton = GetInputMouseButton(buttonName);
+            return inputButton != InputButtons.None ? (int)inputButton : 0;
         }
 
         /// <summary>
