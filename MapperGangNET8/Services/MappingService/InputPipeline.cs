@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ControllerService;
@@ -52,7 +52,7 @@ namespace MapperGangNET8.Services.MappingService
             _blockingManager.MouseDeltaCaptured += OnMouseDeltaCaptured;
             
             // Setup stick decay timer (60 FPS updates)
-            _stickDecayTimer = new System.Timers.Timer(16); // ~60 FPS
+            _stickDecayTimer = new System.Timers.Timer(64); // ~60 FPS
             _stickDecayTimer.Elapsed += OnStickDecayTimerElapsed;
             _stickDecayTimer.AutoReset = true;
         }
@@ -166,9 +166,6 @@ namespace MapperGangNET8.Services.MappingService
             
             _blockingManager.UpdateBlockedKeys(allBindings);
             
-            // Configure mouse blocking
-            // Mouse movement is always blocked and captured for right stick (camera control)
-            // Mouse buttons are blocked if they have mappings
             bool hasMouseButtonBindings = config.MouseSettings?.ButtonMappings?.Any() ?? false;
             _blockingManager.SetMouseBlocking(
                 blockMovement: true, // Always block mouse movement for right stick control
@@ -207,9 +204,10 @@ namespace MapperGangNET8.Services.MappingService
         private void OnMouseStateChanged(object sender, InputMouseEventArgs e)
         {
             if (!_isEnabled) return;
-
-            // Process mouse through mapper
-            _mouseMapper.ProcessMouseInput(e.X, e.Y, e.Button);
+            if (e.Button != 0)
+            {
+                _mouseMapper.ProcessMouseInput(e.X, e.Y, e.Button);
+            }
         }
 
         /// <summary>
@@ -256,12 +254,16 @@ namespace MapperGangNET8.Services.MappingService
             _inputService.KeyDown -= OnKeyDown;
             _inputService.KeyUp -= OnKeyUp;
             _inputService.MouseStateChanged -= OnMouseStateChanged;
+            _blockingManager.MouseDeltaCaptured -= OnMouseDeltaCaptured;
 
             // Stop input service
             if (_isEnabled)
             {
                 _inputService.Stop();
             }
+
+            // Dispose blocking manager
+            _blockingManager?.Dispose();
 
             _disposed = true;
         }

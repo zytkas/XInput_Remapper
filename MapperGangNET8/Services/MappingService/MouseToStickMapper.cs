@@ -134,20 +134,15 @@ namespace MapperGangNET8.Services.MappingService
 
             if (deltaX != 0 || deltaY != 0)
             {
-                // Логируем текущее состояние ДО изменений
-                System.Diagnostics.Debug.WriteLine($"[BEFORE] Stick position: X={_rightStickX:F4}, Y={_rightStickY:F4}");
 
                 // Apply sensitivity and scale
                 double moveX = (deltaX * _mouseSensitivity) / 50.0;
                 double moveY = -(deltaY * _mouseSensitivity) / 50.0;
 
-                System.Diagnostics.Debug.WriteLine($"[CALC] Movement: moveX={moveX:F4}, moveY={moveY:F4}, Sensitivity={_mouseSensitivity:F2}");
 
                 // Accumulate movement to stick position
                 _rightStickX += moveX;
                 _rightStickY += moveY;
-
-                System.Diagnostics.Debug.WriteLine($"[ACCUMULATED] Before clamp: X={_rightStickX:F4}, Y={_rightStickY:F4}");
 
                 // Clamp accumulated position
                 _rightStickX = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickX));
