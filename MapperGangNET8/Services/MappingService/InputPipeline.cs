@@ -217,7 +217,13 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         private void OnMouseDeltaCaptured(object sender, MouseDeltaEventArgs e)
         {
-            if (!_isEnabled) return;
+            System.Diagnostics.Debug.WriteLine($"[PIPELINE] Mouse delta captured: X={e.DeltaX}, Y={e.DeltaY}, Enabled={_isEnabled}");
+
+            if (!_isEnabled)
+            {
+                System.Diagnostics.Debug.WriteLine($"[PIPELINE] Skipped - pipeline disabled");
+                return;
+            }
 
             // Process mouse deltas for camera/stick mapping
             _mouseMapper.ProcessMouseDelta(e.DeltaX, e.DeltaY);
@@ -230,6 +236,7 @@ namespace MapperGangNET8.Services.MappingService
         {
             if (_isEnabled)
             {
+                System.Diagnostics.Debug.WriteLine($"[DECAY TIMER] Tick at {DateTimeOffset.Now:HH:mm:ss.fff}");
                 _mouseMapper.UpdateStickDecay();
             }
         }

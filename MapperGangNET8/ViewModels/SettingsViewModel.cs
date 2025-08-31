@@ -6,7 +6,7 @@ using System.Windows;
 using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
-using MapperGangNET8.Services.ConfigResetService;
+
 
 namespace MapperGangNET8.ViewModels
 {
@@ -17,7 +17,6 @@ namespace MapperGangNET8.ViewModels
     {
         private readonly IConfigService _configService;
         private ConfigModel _currentConfig;
-        private readonly IConfigResetService _resetService;
         #region Приватные поля
         private bool _startWithWindows;
         private bool _startMinimized;
@@ -336,10 +335,9 @@ namespace MapperGangNET8.ViewModels
         public ICommand ImportSettingsCommand { get; }
         #endregion
 
-        public SettingsViewModel(IConfigService configService, IConfigResetService resetService)
+        public SettingsViewModel(IConfigService configService)
         {
             _configService = configService;
-            _resetService = resetService;
 
             AvailableProfiles = new ObservableCollection<string> { "Default", "Game", "Office", "Custom" };
             AvailablePollingRates = new ObservableCollection<string> { "125 Hz", "250 Hz", "500 Hz", "1000 Hz" };
@@ -418,7 +416,7 @@ namespace MapperGangNET8.ViewModels
                 UpdatePropertiesFromConfig();
 
                 // Notify all ViewModels to reload settings
-                _resetService.NotifyConfigurationReset();
+                _configService.NotifyConfigurationReset();
 
                 MessageBox.Show("All settings have been reset to default values.",
                     "Reset Complete",

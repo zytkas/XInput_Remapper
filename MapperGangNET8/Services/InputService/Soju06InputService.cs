@@ -19,87 +19,11 @@ namespace MapperGangNET8.Services.InputService
         
         // Mouse event throttling to prevent performance issues
         private long _lastMouseEventTime = 0;
-        private const long MOUSE_THROTTLE_MS = 16; // ~60fps throttling
+        private const long MOUSE_THROTTLE_MS = 1; // ~60fps throttling
         private int _lastMouseX = 0;
         private int _lastMouseY = 0;
-        private const int MOUSE_MOVEMENT_THRESHOLD = 2; // Minimum pixel movement
+        private const int MOUSE_MOVEMENT_THRESHOLD = 0; // Minimum pixel movement
         
-        /// <summary>
-        /// Convert soju06 library key codes to standard Win32 Virtual-Key codes
-        /// soju06 returns sequential codes (A=1, B=2, etc.) but we need Win32 VK codes (A=65, B=66, etc.)
-        /// </summary>
-        private static readonly Dictionary<int, int> Soju06ToWin32KeyMap = new Dictionary<int, int>()
-        {
-            // Soju06 sequential codes -> Win32 VK codes
-            // A-Z mapping (soju06: 1-26, Win32: 65-90)
-            {1, 65},   // A
-            {2, 66},   // B  
-            {3, 67},   // C
-            {4, 68},   // D
-            {5, 69},   // E
-            {6, 70},   // F
-            {7, 71},   // G
-            {8, 72},   // H
-            {9, 73},   // I
-            {10, 74},  // J
-            {11, 75},  // K
-            {12, 76},  // L
-            {13, 77},  // M
-            {14, 78},  // N
-            {15, 79},  // O
-            {16, 80},  // P
-            {17, 81},  // Q
-            {18, 82},  // R
-            {19, 83},  // S
-            {20, 84},  // T
-            {21, 85},  // U
-            {22, 86},  // V
-            {23, 87},  // W
-            {24, 88},  // X
-            {25, 89},  // Y
-            {26, 90},  // Z
-            
-            // Special keys that soju06 maps differently
-            {66, 32},  // Space (soju06: 66 -> Win32: 32)
-            
-            // Numbers 0-9 (if they're also mapped incorrectly)
-            {27, 48},  // 0
-            {28, 49},  // 1
-            {29, 50},  // 2
-            {30, 51},  // 3
-            {31, 52},  // 4
-            {32, 53},  // 5
-            {33, 54},  // 6
-            {34, 55},  // 7
-            {35, 56},  // 8
-            {36, 57},  // 9
-            
-            // Common control keys
-            {37, 13},  // Enter
-            {38, 27},  // Escape
-            {39, 8},   // Backspace
-            {40, 9},   // Tab
-            {41, 16},  // Shift
-            {42, 17},  // Ctrl
-            {43, 18},  // Alt
-        };
-        
-        /// <summary>
-        /// Convert soju06 key code to Win32 Virtual-Key code
-        /// </summary>
-        private static int ConvertSoju06KeyToWin32(int soju06KeyCode)
-        {
-            // Check if we have a mapping for this key
-            if (Soju06ToWin32KeyMap.TryGetValue(soju06KeyCode, out int win32Code))
-            {
-                return win32Code;
-            }
-            
-            // If no mapping found, return original code (might be correct already)
-            // Add debug info for unmapped keys
-            System.Diagnostics.Debug.WriteLine($"Soju06InputService: Unknown key code {soju06KeyCode}, using as-is");
-            return soju06KeyCode;
-        }
         
 
         /// <summary>
@@ -203,13 +127,11 @@ namespace MapperGangNET8.Services.InputService
 
         private bool KeyboardKeyDown(object sender, InputKeys key, InputKeyState state)
         {
-            // Convert soju06 key code to Win32 VK code
             int soju06Code = (int)key;
-            int win32Code = ConvertSoju06KeyToWin32(soju06Code);
             
-            Debug.WriteLine($"Soju06InputService: KeyDown - Soju06 code: {soju06Code} -> Win32 code: {win32Code}");
+            Debug.WriteLine($"Soju06InputService: KeyDown - Soju06 code: {soju06Code} ({key})");
             
-            if (IsPanicKeyCombinationPressed(win32Code))
+            if (IsPanicKeyCombinationPressed(key))
             {
                 Stop();
 
@@ -218,10 +140,10 @@ namespace MapperGangNET8.Services.InputService
                 return true;
             }
 
-            _inputState.SetKeyState(win32Code, true);
+            _inputState.SetKeyState(soju06Code, true);
 
             var args = new InputKeyEventArgs(
-                soju06Code,  // Use soju06 code directly (InputKeys enum values)
+                soju06Code,
                 (int)state,
                 DateTimeOffset.Now.ToUnixTimeMilliseconds()
             );
@@ -229,36 +151,31 @@ namespace MapperGangNET8.Services.InputService
             KeyDown?.Invoke(this, args);
 
             // Check if this key should be blocked from reaching the game
-            if (_blockingManager?.ShouldBlockKey(win32Code) == true)
+            if (_blockingManager?.ShouldBlockKey(soju06Code) == true)
             {
-                Debug.WriteLine($"Soju06InputService: Blocking key down {win32Code} from game");
+                Debug.WriteLine($"Soju06InputService: Blocking key down {soju06Code} from game");
                 return false; // Block from game
             }
 
             return true; // Allow pass-through to game
         }
 
-        private bool IsPanicKeyCombinationPressed(int win32KeyCode)
+        private bool IsPanicKeyCombinationPressed(InputKeys key)
         {
-            //ctrl+alt+shift+esc (using Win32 VK codes)
-            return (win32KeyCode == 27 && // VK_ESCAPE
-                    _inputState.IsKeyPressed(17) && // VK_CONTROL
-                    _inputState.IsKeyPressed(18) && // VK_MENU (Alt)
-                    _inputState.IsKeyPressed(16)); // VK_SHIFT
+            // F9 key for emergency stop
+            return key == InputKeys.F9;
         }
 
         private bool KeyboardKeyUp(object sender, InputKeys key, InputKeyState state)
         {
-            // Convert soju06 key code to Win32 VK code
             int soju06Code = (int)key;
-            int win32Code = ConvertSoju06KeyToWin32(soju06Code);
             
-            Debug.WriteLine($"Soju06InputService: KeyUp - Soju06 code: {soju06Code} -> Win32 code: {win32Code}");
+            Debug.WriteLine($"Soju06InputService: KeyUp - Soju06 code: {soju06Code} ({key})");
             
-            _inputState.SetKeyState(win32Code, false);
+            _inputState.SetKeyState(soju06Code, false);
 
             var args = new InputKeyEventArgs(
-                soju06Code,  // Use soju06 code directly (InputKeys enum values)
+                soju06Code,
                 (int)state,
                 DateTimeOffset.Now.ToUnixTimeMilliseconds()
             );
@@ -266,9 +183,9 @@ namespace MapperGangNET8.Services.InputService
             KeyUp?.Invoke(this, args);
 
             // Check if this key should be blocked from reaching the game
-            if (_blockingManager?.ShouldBlockKey(win32Code) == true)
+            if (_blockingManager?.ShouldBlockKey(soju06Code) == true)
             {
-                Debug.WriteLine($"Soju06InputService: Blocking key up {win32Code} from game");
+                Debug.WriteLine($"Soju06InputService: Blocking key up {soju06Code} from game");
                 return false; // Block from game
             }
 
@@ -343,7 +260,6 @@ namespace MapperGangNET8.Services.InputService
         public void Dispose()
         {
             Dispose(true);
-            GC.SuppressFinalize(this);
         }
         protected virtual void Dispose(bool disposing)
         {
@@ -354,6 +270,7 @@ namespace MapperGangNET8.Services.InputService
             {
                 Stop();
 
+                GC.SuppressFinalize(this);
                 if (_keyboardHook != null)
                 {
                     _keyboardHook.KeyboardModel.KeyDown -= KeyboardKeyDown;

@@ -2,7 +2,6 @@
 using System.Windows.Input;
 using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
-using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.ConfigService;
 
 namespace MapperGangNET8.ViewModels
@@ -284,10 +283,10 @@ namespace MapperGangNET8.ViewModels
         /// <summary>
         /// Конструктор KeyboardViewModel
         /// </summary>
-        public KeyboardViewModel(IConfigService configService, IConfigResetService resetService)
+        public KeyboardViewModel(IConfigService configService)
         {
             _configService = configService;
-            resetService.ConfigurationReset += async (s, e) => await LoadSettingsAsync();
+            _configService.ConfigurationReset += async (s, e) => await LoadSettingsAsync();
             // Инициализация коллекции маппингов
             ButtonMappings = new ObservableCollection<KeyboardButtonMapping>();
 

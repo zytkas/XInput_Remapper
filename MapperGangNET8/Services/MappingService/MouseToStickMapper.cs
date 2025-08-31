@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ControllerService;
 using Input;
@@ -128,32 +128,42 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         public void ProcessMouseDelta(int deltaX, int deltaY)
         {
-            // Record time of mouse movement
+            System.Diagnostics.Debug.WriteLine($"[MOUSE DELTA] Input: deltaX={deltaX}, deltaY={deltaY}");
+
             _lastMouseMoveTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            // Only process if there's actual movement
             if (deltaX != 0 || deltaY != 0)
             {
+                // Логируем текущее состояние ДО изменений
+                System.Diagnostics.Debug.WriteLine($"[BEFORE] Stick position: X={_rightStickX:F4}, Y={_rightStickY:F4}");
+
                 // Apply sensitivity and scale
-                double moveX = (deltaX * _mouseSensitivity) / 50.0; // Adjust scale for better feel
-                double moveY = -(deltaY * _mouseSensitivity) / 50.0; // Invert Y axis
+                double moveX = (deltaX * _mouseSensitivity) / 50.0;
+                double moveY = -(deltaY * _mouseSensitivity) / 50.0;
+
+                System.Diagnostics.Debug.WriteLine($"[CALC] Movement: moveX={moveX:F4}, moveY={moveY:F4}, Sensitivity={_mouseSensitivity:F2}");
 
                 // Accumulate movement to stick position
                 _rightStickX += moveX;
                 _rightStickY += moveY;
 
-                // Clamp accumulated position to valid stick range [-1.0, 1.0]
+                System.Diagnostics.Debug.WriteLine($"[ACCUMULATED] Before clamp: X={_rightStickX:F4}, Y={_rightStickY:F4}");
+
+                // Clamp accumulated position
                 _rightStickX = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickX));
                 _rightStickY = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickY));
 
-                // Apply to right stick (for camera/looking)
+                System.Diagnostics.Debug.WriteLine($"[AFTER] Final stick: X={_rightStickX:F4}, Y={_rightStickY:F4}");
+
+                // Apply to controller
                 _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
                 _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
-                
-                System.Diagnostics.Debug.WriteLine($"MouseToStick Delta: ({deltaX},{deltaY}) -> Stick({_rightStickX:F3},{_rightStickY:F3})");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[NO MOVEMENT] Delta is zero");
             }
         }
-
         /// <summary>
         /// Process mouse movement and map to right stick
         /// </summary>
@@ -392,24 +402,38 @@ namespace MapperGangNET8.Services.MappingService
         public void UpdateStickDecay()
         {
             if (!_enableStickDecay)
-                return;
-                
-            long currentTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            
-            // Only start decay if mouse hasn't moved recently
-            if (currentTime - _lastMouseMoveTime > STICK_DECAY_DELAY_MS)
             {
-                // Apply decay to return stick to center
+                System.Diagnostics.Debug.WriteLine($"[DECAY] Disabled");
+                return;
+            }
+
+            long currentTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            long timeSinceMove = currentTime - _lastMouseMoveTime;
+
+            // Only start decay if mouse hasn't moved recently
+            if (timeSinceMove > STICK_DECAY_DELAY_MS)
+            {
+                double oldX = _rightStickX;
+                double oldY = _rightStickY;
+
+                // Apply decay
                 _rightStickX *= _stickDecayRate;
                 _rightStickY *= _stickDecayRate;
-                
-                // Snap to zero if very close to center
+
+                // Snap to zero if very close
                 if (System.Math.Abs(_rightStickX) < 0.01) _rightStickX = 0.0;
                 if (System.Math.Abs(_rightStickY) < 0.01) _rightStickY = 0.0;
-                
+
+                System.Diagnostics.Debug.WriteLine($"[DECAY] Time since move: {timeSinceMove}ms, Rate: {_stickDecayRate:F2}");
+                System.Diagnostics.Debug.WriteLine($"[DECAY] From ({oldX:F4},{oldY:F4}) -> ({_rightStickX:F4},{_rightStickY:F4})");
+
                 // Update controller
                 _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
                 _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[DECAY] Waiting... {timeSinceMove}ms < {STICK_DECAY_DELAY_MS}ms");
             }
         }
         

@@ -39,5 +39,8 @@ namespace MapperGangNET8.Services.ConfigService
         /// <param name="path">Путь к файлу</param>
         /// <returns>Модель конфигурации</returns>
         Task<ConfigModel> ImportConfigAsync(string path);
+
+        event EventHandler ConfigurationReset;
+        void NotifyConfigurationReset();
     }
 }

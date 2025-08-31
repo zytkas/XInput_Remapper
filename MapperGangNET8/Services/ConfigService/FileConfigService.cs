@@ -12,6 +12,7 @@ namespace MapperGangNET8.Services.ConfigService
         private readonly string _configFolder;
         private readonly string _configFilePath;
         private readonly JsonSerializerOptions _jsonOptions;
+        public event EventHandler ConfigurationReset;
 
         public FileConfigService()
         {
@@ -177,6 +178,11 @@ namespace MapperGangNET8.Services.ConfigService
             });
 
             return config;
+        }
+
+        public void NotifyConfigurationReset()
+        {
+            ConfigurationReset?.Invoke(this, EventArgs.Empty);
         }
     }
 }

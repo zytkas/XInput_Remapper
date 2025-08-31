@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using System.Linq;
 using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
-using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.ConfigService;
 
 namespace MapperGangNET8.ViewModels
@@ -226,7 +225,7 @@ namespace MapperGangNET8.ViewModels
         /// <summary>
         /// Конструктор MouseViewModel
         /// </summary>
-        public MouseViewModel(IConfigService configService, IConfigResetService resetService)
+        public MouseViewModel(IConfigService configService)
         {
             _configService = configService;
 

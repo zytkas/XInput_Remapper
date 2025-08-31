@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Input;
 
 namespace MapperGangNET8.Models
 {
@@ -59,6 +60,16 @@ namespace MapperGangNET8.Models
         }
 
         /// <summary>
+        /// Check if a key is currently pressed using InputKeys enum
+        /// </summary>
+        /// <param name="key">InputKeys enum value to check</param>
+        /// <returns>True if pressed, false otherwise</returns>
+        public bool IsKeyPressed(InputKeys key)
+        {
+            return IsKeyPressed((int)key);
+        }
+
+        /// <summary>
         /// Check if a mouse button is currently pressed
         /// </summary>
         /// <param name="button">Button code to check</param>
@@ -77,6 +88,16 @@ namespace MapperGangNET8.Models
         {
             PressedKeys[keyCode] = isPressed;
             LastInputTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+        }
+
+        /// <summary>
+        /// Set key press state using InputKeys enum
+        /// </summary>
+        /// <param name="key">InputKeys enum value</param>
+        /// <param name="isPressed">Whether key is pressed</param>
+        public void SetKeyState(InputKeys key, bool isPressed)
+        {
+            SetKeyState((int)key, isPressed);
         }
 
         /// <summary>

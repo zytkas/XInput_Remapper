@@ -16,8 +16,6 @@ namespace MapperGangNET8.Views
         private readonly DispatcherTimer _updateTimer;
         private int _logUpdateCounter = 0;
         private const int LOG_UPDATE_THROTTLE = 5; // Update UI every 5th log entry
-        
-        // Reuse StringBuilder instances to reduce GC pressure
         private readonly StringBuilder _kbStateBuilder = new StringBuilder();
         private readonly StringBuilder _mouseStateBuilder = new StringBuilder();
 

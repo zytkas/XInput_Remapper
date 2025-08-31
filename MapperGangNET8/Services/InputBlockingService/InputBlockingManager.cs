@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using MapperGangNET8.Models;
 using Input;
@@ -93,28 +93,31 @@ namespace MapperGangNET8.Services.InputBlockingService
         public bool ShouldBlockMouse(InputButtons button, int x, int y)
         {
             if (!_isEnabled) return false;
-            
+
             // Always capture mouse deltas for camera control if enabled
             if (_captureMouseDeltas && button == InputButtons.Move)
             {
-                int deltaX = 0, deltaY = 0;
-                
-                if (_lastMouseX != 0 || _lastMouseY != 0)
+                if (_lastMouseX == 0 && _lastMouseY == 0)
                 {
-                    deltaX = x - _lastMouseX;
-                    deltaY = y - _lastMouseY;
-                    
-                    // Only fire event if there's actual movement
+                    // Инициализация — просто запоминаем стартовую точку
+                    _lastMouseX = x;
+                    _lastMouseY = y;
+                }
+                else
+                {
+                    int deltaX = x - _lastMouseX;
+                    int deltaY = y - _lastMouseY;
+
                     if (deltaX != 0 || deltaY != 0)
                     {
                         MouseDeltaCaptured?.Invoke(this, new MouseDeltaEventArgs(deltaX, deltaY, x, y));
                     }
+
+                    _lastMouseX = x;
+                    _lastMouseY = y;
                 }
-                
-                _lastMouseX = x;
-                _lastMouseY = y;
             }
-            
+
             // Check if this mouse input should be blocked
             if (button == InputButtons.Move && _blockMouseMovement)
             {

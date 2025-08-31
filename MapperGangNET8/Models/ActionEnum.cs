@@ -179,10 +179,10 @@ namespace MapperGangNET8.Models
         }
 
         /// <summary>
-        /// Получить виртуальный код клавиши по её названию (для обратной совместимости)
+        /// Получить soju06 код клавиши по её названию
         /// </summary>
         /// <param name="keyName">Название клавиши</param>
-        /// <returns>Виртуальный код или 0 если клавиша не найдена</returns>
+        /// <returns>Soju06 код (InputKeys enum значение) или 0 если клавиша не найдена</returns>
         public static int GetKeyCode(string keyName)
         {
             var inputKey = GetInputKey(keyName);
@@ -200,10 +200,10 @@ namespace MapperGangNET8.Models
         }
 
         /// <summary>
-        /// Получить код кнопки мыши по её названию (для обратной совместимости)
+        /// Получить soju06 код кнопки мыши по её названию
         /// </summary>
         /// <param name="buttonName">Название кнопки</param>
-        /// <returns>Код кнопки или 0 если не найдена</returns>
+        /// <returns>Soju06 код (InputButtons enum значение) или 0 если не найдена</returns>
         public static int GetMouseButtonCode(string buttonName)
         {
             var inputButton = GetInputMouseButton(buttonName);

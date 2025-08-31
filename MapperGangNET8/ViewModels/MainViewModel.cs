@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
-using MapperGangNET8.Services.ConfigResetService;
 using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.ProfileService;
 using MapperGangNET8.Services.InputMappingService;

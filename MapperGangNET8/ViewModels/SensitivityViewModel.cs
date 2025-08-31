@@ -1,6 +1,4 @@
-﻿// ViewModels/SensitivityViewModel.cs
-using MapperGangNET8.Models;
-using MapperGangNET8.Services.ConfigResetService;
+﻿using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
@@ -72,7 +70,7 @@ namespace MapperGangNET8.ViewModels
 
         public ICommand ResetCommand { get; }
 
-        public SensitivityViewModel(IConfigService configService, IConfigResetService resetService)
+        public SensitivityViewModel(IConfigService configService)
         {
             _configService = configService;
 
