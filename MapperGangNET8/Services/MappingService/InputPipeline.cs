@@ -1,9 +1,10 @@
-﻿using System;
-using System.Linq;
-using MapperGangNET8.Models;
+﻿using MapperGangNET8.Models;
+using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.ControllerService;
-using MapperGangNET8.Services.InputService;
 using MapperGangNET8.Services.InputBlockingService;
+using MapperGangNET8.Services.InputService;
+using System;
+using System.Linq;
 
 namespace MapperGangNET8.Services.MappingService
 {
@@ -14,10 +15,13 @@ namespace MapperGangNET8.Services.MappingService
     {
         private readonly IInputService _inputService;
         private readonly IControllerService _controllerService;
+        private readonly IConfigService _configService;
         private readonly KeyToControllerMapper _keyMapper;
         private readonly MouseToStickMapper _mouseMapper;
         private readonly InputBlockingManager _blockingManager;
-        
+
+
+        private bool _isControllerConnected = false;
         private bool _isEnabled;
         private bool _disposed;
         
@@ -29,11 +33,12 @@ namespace MapperGangNET8.Services.MappingService
             IControllerService controllerService,
             KeyToControllerMapper keyMapper,
             MouseToStickMapper mouseMapper,
-            InputBlockingManager blockingManager)
+            InputBlockingManager blockingManager, IConfigService configService)
         {
             _inputService = inputService;
             _controllerService = controllerService;
             _keyMapper = keyMapper;
+            _configService = configService;
             _mouseMapper = mouseMapper;
             _blockingManager = blockingManager;
 
@@ -238,7 +243,70 @@ namespace MapperGangNET8.Services.MappingService
                 _mouseMapper.UpdateStickDecay();
             }
         }
-        
+
+
+        /// <summary>
+        /// Подключить контроллер один раз за сессию
+        /// </summary>
+        public async Task<bool> ConnectControllerAsync()
+        {
+            if (_isControllerConnected) return true;
+
+            try
+            {
+                // Загружаем конфиг для типа контроллера
+                var config = await _configService.LoadConfigAsync();
+
+                ControllerType controllerType = config?.AppSettings?.SelectedControllerType == "DualShock 4 Controller"
+                    ? ControllerType.DualShock4
+                    : ControllerType.Xbox360;
+
+                bool success = await _controllerService.ConnectAsync(controllerType, 1);
+                _isControllerConnected = success;
+                return success;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error connecting controller: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Отключить контроллер
+        /// </summary>
+        public async Task DisconnectControllerAsync()
+        {
+            if (!_isControllerConnected) return;
+
+            SetEnabled(false); // Сначала останавливаем маппинг
+            await _controllerService.DisconnectAsync();
+            _isControllerConnected = false;
+        }
+
+        /// <summary>
+        /// Включить/выключить маппинг (контроллер остаётся подключен)
+        /// </summary>
+        public async Task SetMappingEnabledAsync(bool enabled)
+        {
+            if (enabled && !_isControllerConnected)
+            {
+                var connected = await ConnectControllerAsync();
+                if (!connected) return;
+            }
+
+            SetEnabled(enabled); // Используем существующий метод
+        }
+
+        /// <summary>
+        /// Обновить конфигурацию
+        /// </summary>
+        public async Task RefreshConfigurationAsync()
+        {
+            var config = await _configService.LoadConfigAsync();
+            UpdateConfiguration(config);
+        }
+
         /// <summary>
         /// Dispose resources
         /// </summary>

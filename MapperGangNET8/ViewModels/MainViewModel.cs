@@ -1,20 +1,21 @@
-﻿using System.Collections.ObjectModel;
-using System.Windows.Input;
-using System.Threading.Tasks;
-using System.Windows;
-using MapperGangNET8.Infrastructure.Commands;
+﻿using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
-using MapperGangNET8.Services.ProfileService;
 using MapperGangNET8.Services.InputMappingService;
+using MapperGangNET8.Services.MappingService;
+using MapperGangNET8.Services.ProfileService;
+using System.Collections.ObjectModel;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Input;
 
 namespace MapperGangNET8.ViewModels
 {
     public class MainViewModel : ViewModelBase
     {
+        private readonly InputPipeline _inputPipeline;
         private readonly IConfigService _configService;
         private readonly IProfileService _profileService;
-        private readonly InputMappingService _inputMappingService;
         private ConfigModel _currentConfig;
 
         #region Приватные поля
@@ -110,7 +111,7 @@ namespace MapperGangNET8.ViewModels
                         _ = SaveSettingsAsync();
                         
                         // Уведомляем InputMappingService об изменении конфигурации
-                        _ = _inputMappingService.RefreshConfigurationAsync();
+                        _ = _inputPipeline.RefreshConfigurationAsync();
                     }
                 }
             }
@@ -135,7 +136,7 @@ namespace MapperGangNET8.ViewModels
                         _ = SaveSettingsAsync();
                         
                         // Уведомляем InputMappingService об изменении конфигурации
-                        _ = _inputMappingService.RefreshConfigurationAsync();
+                        _ = _inputPipeline.RefreshConfigurationAsync();
                     }
                 }
             }
@@ -176,11 +177,11 @@ namespace MapperGangNET8.ViewModels
         /// </summary>
         public MainViewModel(IConfigService configService,
                             IProfileService profileService,
-                            InputMappingService inputMappingService)
+                             InputPipeline inputPipeline)
         {
             _configService = configService;
             _profileService = profileService;
-            _inputMappingService = inputMappingService;
+            _inputPipeline = inputPipeline;
             // Инициализация свойств по умолчанию
             AvailableProfiles = new ObservableCollection<string>();
 
@@ -300,13 +301,13 @@ namespace MapperGangNET8.ViewModels
             if (IsDeviceActive)
             {
                 // Остановить маппинг (контроллер остается подключенным)
-                await _inputMappingService.SetMappingEnabledAsync(false);
+                await _inputPipeline.SetMappingEnabledAsync(false);
                 IsDeviceActive = false;
             }
             else
             {
                 // Запустить маппинг (подключит контроллер если нужно)
-                await _inputMappingService.SetMappingEnabledAsync(true);
+                await _inputPipeline.SetMappingEnabledAsync(true);
                 IsDeviceActive = true;
             }
         }
@@ -332,7 +333,7 @@ namespace MapperGangNET8.ViewModels
             try
             {
                 // Подключаем контроллер заранее для быстрого запуска маппинга
-                bool connected = await _inputMappingService.ConnectControllerAsync();
+                bool connected = await _inputPipeline.ConnectControllerAsync();
                 
                 if (connected)
                 {
@@ -361,7 +362,7 @@ namespace MapperGangNET8.ViewModels
             UpdatePropertiesFromConfig();
             
             // Уведомляем InputMappingService об изменении конфигурации
-            await _inputMappingService.RefreshConfigurationAsync();
+            await _inputPipeline.RefreshConfigurationAsync();
         }
 
     } 

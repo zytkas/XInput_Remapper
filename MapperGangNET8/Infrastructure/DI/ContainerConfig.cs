@@ -27,7 +27,6 @@ namespace MapperGangNET8.Infrastructure.DI
             services.AddSingleton<KeyToControllerMapper>();
             services.AddSingleton<MouseToStickMapper>();
             services.AddSingleton<InputPipeline>();
-            services.AddSingleton<InputMappingService>();
 
             // Register debug windows
             services.AddTransient<InputDebugWindow>();
