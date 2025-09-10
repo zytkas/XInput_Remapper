@@ -1,9 +1,7 @@
 ﻿using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
-using MapperGangNET8.Services.InputMappingService;
 using MapperGangNET8.Services.MappingService;
-using MapperGangNET8.Services.ProfileService;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
@@ -15,7 +13,6 @@ namespace MapperGangNET8.ViewModels
     {
         private readonly InputPipeline _inputPipeline;
         private readonly IConfigService _configService;
-        private readonly IProfileService _profileService;
         private ConfigModel _currentConfig;
 
         #region Приватные поля
@@ -175,12 +172,10 @@ namespace MapperGangNET8.ViewModels
         /// <summary>
         /// Конструктор MainViewModel
         /// </summary>
-        public MainViewModel(IConfigService configService,
-                            IProfileService profileService,
+        public MainViewModel(IConfigService configService,           
                              InputPipeline inputPipeline)
         {
             _configService = configService;
-            _profileService = profileService;
             _inputPipeline = inputPipeline;
             // Инициализация свойств по умолчанию
             AvailableProfiles = new ObservableCollection<string>();
@@ -208,7 +203,7 @@ namespace MapperGangNET8.ViewModels
             _currentConfig = await _configService.LoadConfigAsync();
 
             // Загружаем список профилей
-            var profiles = await _profileService.GetProfilesAsync();
+            var profiles = await _configService.GetProfilesAsync();
             AvailableProfiles.Clear();
             foreach (var profile in profiles)
             {
@@ -216,7 +211,7 @@ namespace MapperGangNET8.ViewModels
             }
 
             // Получаем активный профиль
-            string activeProfileName = await _profileService.GetActiveProfileNameAsync();
+            string activeProfileName = await _configService.GetActiveProfileNameAsync();
             ActiveProfile = activeProfileName;
 
             // Обновляем свойства
@@ -268,10 +263,10 @@ namespace MapperGangNET8.ViewModels
             if (!string.IsNullOrWhiteSpace(profileName))
             {
                 // Создаем новый профиль
-                await _profileService.CreateProfileAsync(profileName, "Пользовательский профиль");
+                await _configService.CreateProfileAsync(profileName, "Пользовательский профиль");
 
                 // Обновляем список доступных профилей
-                var profiles = await _profileService.GetProfilesAsync();
+                var profiles = await _configService.GetProfilesAsync();
                 AvailableProfiles.Clear();
                 foreach (var profile in profiles)
                 {
@@ -355,7 +350,7 @@ namespace MapperGangNET8.ViewModels
             if (string.IsNullOrWhiteSpace(profileName)) return;
 
             // Переключаемся на выбранный профиль
-            await _profileService.SwitchToProfileAsync(profileName);
+            await _configService.SwitchToProfileAsync(profileName);
 
             // Обновляем настройки
             _currentConfig = await _configService.LoadConfigAsync();

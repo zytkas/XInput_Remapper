@@ -2,11 +2,8 @@
 using MapperGangNET8.ViewModels;
 using MapperGangNET8.Views;
 using MapperGangNET8.Services.ConfigService;
-using MapperGangNET8.Services.ProfileService;
-using MapperGangNET8.Services;
 using MapperGangNET8.Services.InputService;
 using MapperGangNET8.Services.ControllerService;
-using MapperGangNET8.Services.InputMappingService;
 using MapperGangNET8.Services.MappingService;
 using MapperGangNET8.Services.InputBlockingService;
 
@@ -18,7 +15,6 @@ namespace MapperGangNET8.Infrastructure.DI
         {
             // Register services
             services.AddSingleton<IConfigService, FileConfigService>();
-            services.AddSingleton<IProfileService, ProfileService>();
             services.AddSingleton<IInputService, Soju06InputService>();
             services.AddSingleton<IControllerService, ViGemControllerService>();
             
