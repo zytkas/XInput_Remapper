@@ -1,15 +1,16 @@
-﻿using MapperGangNET8.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.ControllerService;
-using MapperGangNET8.Services.InputBlockingService;
+using MapperGangNET8.Services.InputCaptureService;
 using MapperGangNET8.Services.InputService;
-using System;
-using System.Linq;
 
 namespace MapperGangNET8.Services.MappingService
 {
     /// <summary>
-    /// Main pipeline for processing input and sending to controller - Step 7 implementation
+    /// Main pipeline for processing input and sending to controller
     /// </summary>
     public class InputPipeline : IDisposable
     {
@@ -18,46 +19,48 @@ namespace MapperGangNET8.Services.MappingService
         private readonly IConfigService _configService;
         private readonly KeyToControllerMapper _keyMapper;
         private readonly MouseToStickMapper _mouseMapper;
-        private readonly InputBlockingManager _blockingManager;
-
+        private readonly InputCaptureManager _captureManager;
 
         private bool _isControllerConnected = false;
-        private bool _isEnabled;
-        private bool _disposed;
-        
-        // Timer for mouse stick decay updates
+        private bool _isEnabled = false;
+        private bool _disposed = false;
+
+        // Timer for stick decay (60 FPS)
         private readonly System.Timers.Timer _stickDecayTimer;
 
         public InputPipeline(
             IInputService inputService,
             IControllerService controllerService,
+            IConfigService configService,
             KeyToControllerMapper keyMapper,
             MouseToStickMapper mouseMapper,
-            InputBlockingManager blockingManager, IConfigService configService)
+            InputCaptureManager captureManager)
         {
             _inputService = inputService;
             _controllerService = controllerService;
-            _keyMapper = keyMapper;
             _configService = configService;
+            _keyMapper = keyMapper;
             _mouseMapper = mouseMapper;
-            _blockingManager = blockingManager;
+            _captureManager = captureManager;
 
-            // Set blocking manager on input service if it supports it
+            // Setup input service with capture manager for key blocking
             if (_inputService is Soju06InputService soju06Service)
             {
-                soju06Service.SetInputBlockingManager(_blockingManager);
+                soju06Service.SetInputBlockingManager(_captureManager);
             }
 
-            // Subscribe to input events
+            // Subscribe to keyboard events
             _inputService.KeyDown += OnKeyDown;
             _inputService.KeyUp += OnKeyUp;
+
+            // Subscribe to mouse events
             _inputService.MouseStateChanged += OnMouseStateChanged;
-            
-            // Subscribe to mouse delta events for camera control
-            _blockingManager.MouseDeltaCaptured += OnMouseDeltaCaptured;
-            
-            // Setup stick decay timer (60 FPS updates)
-            _stickDecayTimer = new System.Timers.Timer(64); // ~60 FPS
+
+            // Subscribe to raw mouse delta events
+            _captureManager.MouseDeltaCaptured += OnMouseDeltaCaptured;
+
+            // Setup stick decay timer (60 FPS)
+            _stickDecayTimer = new System.Timers.Timer(16); // ~60 FPS
             _stickDecayTimer.Elapsed += OnStickDecayTimerElapsed;
             _stickDecayTimer.AutoReset = true;
         }
@@ -73,25 +76,42 @@ namespace MapperGangNET8.Services.MappingService
 
             if (enabled)
             {
-                // Enable input blocking
-                _blockingManager.SetEnabled(true);
-                // Start input capture
+                System.Diagnostics.Debug.WriteLine("[PIPELINE] Enabling input pipeline...");
+
+                // Start Raw Input capture for mouse deltas
+                _captureManager.EnableRawInput(true);
+
+                // Start keyboard/mouse hooks
                 _inputService.Start();
+
+
                 // Start stick decay timer
                 _stickDecayTimer.Start();
+
+                System.Diagnostics.Debug.WriteLine("[PIPELINE] ✅ Input pipeline enabled");
             }
             else
             {
+                System.Diagnostics.Debug.WriteLine("[PIPELINE] Disabling input pipeline...");
+
                 // Stop stick decay timer
                 _stickDecayTimer.Stop();
-                // Stop input capture
+
+                // Stop keyboard/mouse hooks
                 _inputService.Stop();
-                // Disable input blocking
-                _blockingManager.SetEnabled(false);
-                // Reset controller state when disabled
+
+
+                // Stop Raw Input capture
+                _captureManager.EnableRawInput(false);
+
+                // Reset controller state
                 _controllerService.ResetState();
-                // Reset mouse mapper
+
+                // Reset mappers
+                _keyMapper.Reset();
                 _mouseMapper.Reset();
+
+                System.Diagnostics.Debug.WriteLine("[PIPELINE] ✅ Input pipeline disabled");
             }
         }
 
@@ -100,86 +120,69 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         public void UpdateConfiguration(ConfigModel config)
         {
+            // Update mappers
             _keyMapper.UpdateConfiguration(config);
             _mouseMapper.UpdateConfiguration(config);
-            
-            // Update input blocking based on configuration
-            // Convert keyboard and mouse mappings to unified KeyBindingModel list for blocking
-            var allBindings = new List<KeyBindingModel>();
-            
+
+            // Update blocked keys for keyboard
+            var blockedKeys = new List<KeyBindingModel>();
+
             // Add keyboard button mappings
-            if (config.KeyboardSettings?.ButtonMappings != null)
+            if (config?.KeyboardSettings?.ButtonMappings != null)
             {
                 foreach (var mapping in config.KeyboardSettings.ButtonMappings)
                 {
                     if (!string.IsNullOrEmpty(mapping.KeyboardKey))
                     {
-                        // Convert keyboard key string to soju06 InputKeys enum code
                         var keyCode = InputKeyMap.GetKeyCode(mapping.KeyboardKey);
                         if (keyCode != 0)
                         {
-                            allBindings.Add(new KeyBindingModel
+                            blockedKeys.Add(new KeyBindingModel
                             {
                                 InputType = InputDeviceType.Keyboard,
-                                InputCode = keyCode,
-                                Action = ControllerButton.A // Placeholder - actual action doesn't matter for blocking
+                                InputCode = keyCode
                             });
                         }
                     }
                 }
             }
-            
-            // Add WASD movement keys (always blocked)
-            var movementKeys = new[]
+
+            // Add WASD movement keys
+            if (config?.KeyboardSettings != null)
             {
-                config.KeyboardSettings?.MovementUp ?? "W",
-                config.KeyboardSettings?.MovementLeft ?? "A", 
-                config.KeyboardSettings?.MovementDown ?? "S",
-                config.KeyboardSettings?.MovementRight ?? "D"
-            };
-            
-            foreach (var keyStr in movementKeys)
-            {
-                var keyCode = InputKeyMap.GetKeyCode(keyStr);
-                if (keyCode != 0)
+                var movementKeys = new[]
                 {
-                    allBindings.Add(new KeyBindingModel
-                    {
-                        InputType = InputDeviceType.Keyboard,
-                        InputCode = keyCode,
-                        Action = ControllerButton.A // Placeholder
-                    });
-                }
-            }
-            
-            // Add mouse button mappings
-            if (config.MouseSettings?.ButtonMappings != null)
-            {
-                foreach (var mapping in config.MouseSettings.ButtonMappings)
+                    config.KeyboardSettings.MovementUp ?? "W",
+                    config.KeyboardSettings.MovementLeft ?? "A",
+                    config.KeyboardSettings.MovementDown ?? "S",
+                    config.KeyboardSettings.MovementRight ?? "D"
+                };
+
+                foreach (var key in movementKeys)
                 {
-                    if (!string.IsNullOrEmpty(mapping.MouseButton))
+                    var keyCode = InputKeyMap.GetKeyCode(key);
+                    if (keyCode != 0)
                     {
-                        allBindings.Add(new KeyBindingModel
+                        blockedKeys.Add(new KeyBindingModel
                         {
-                            InputType = InputDeviceType.Mouse,
-                            InputCode = 0, // Mouse buttons handled differently
-                            Action = ControllerButton.A // Placeholder
+                            InputType = InputDeviceType.Keyboard,
+                            InputCode = keyCode
                         });
                     }
                 }
             }
-            
-            _blockingManager.UpdateBlockedKeys(allBindings);
-            
-            bool hasMouseButtonBindings = config.MouseSettings?.ButtonMappings?.Any() ?? false;
-            _blockingManager.SetMouseBlocking(
-                blockMovement: true, // Always block mouse movement for right stick control
-                blockButtons: hasMouseButtonBindings, // Block mouse buttons if they are mapped
-                captureDeltas: true // Always capture mouse deltas for camera control
-            );
+
+            // Update capture manager with blocked keys
+            _captureManager.UpdateBlockedKeys(blockedKeys);
+
+            // Update blocked mouse buttons
+            if (config?.MouseSettings?.ButtonMappings != null)
+            {
+                _captureManager.UpdateBlockedMouseButtons(config.MouseSettings.ButtonMappings);
+            }
+
+            System.Diagnostics.Debug.WriteLine("[PIPELINE] Configuration updated");
         }
-        
-        
 
         /// <summary>
         /// Handle key down events
@@ -187,8 +190,6 @@ namespace MapperGangNET8.Services.MappingService
         private void OnKeyDown(object sender, InputKeyEventArgs e)
         {
             if (!_isEnabled) return;
-
-            // Process key through mapper
             _keyMapper.ProcessKeyDown(e.KeyCode);
         }
 
@@ -198,55 +199,46 @@ namespace MapperGangNET8.Services.MappingService
         private void OnKeyUp(object sender, InputKeyEventArgs e)
         {
             if (!_isEnabled) return;
-
-            // Process key through mapper
             _keyMapper.ProcessKeyUp(e.KeyCode);
         }
 
         /// <summary>
-        /// Handle mouse state changes
+        /// Handle mouse state changes (button events)
         /// </summary>
         private void OnMouseStateChanged(object sender, InputMouseEventArgs e)
         {
             if (!_isEnabled) return;
+
+            // Process mouse button events
             if (e.Button != 0)
             {
-                _mouseMapper.ProcessMouseInput(e.X, e.Y, e.Button);
+                _keyMapper.ProcessMouseButton(e.Button);
             }
         }
 
         /// <summary>
-        /// Handle mouse delta events for camera control
+        /// Handle raw mouse delta events
         /// </summary>
         private void OnMouseDeltaCaptured(object sender, MouseDeltaEventArgs e)
         {
-            System.Diagnostics.Debug.WriteLine($"[PIPELINE] Mouse delta captured: X={e.DeltaX}, Y={e.DeltaY}, Enabled={_isEnabled}");
+            if (!_isEnabled) return;
 
-            if (!_isEnabled)
-            {
-                System.Diagnostics.Debug.WriteLine($"[PIPELINE] Skipped - pipeline disabled");
-                return;
-            }
-
-            // Process mouse deltas for camera/stick mapping
+            // Process raw mouse deltas
             _mouseMapper.ProcessMouseDelta(e.DeltaX, e.DeltaY);
+
         }
 
         /// <summary>
-        /// Handle stick decay timer events
+        /// Handle stick decay timer
         /// </summary>
         private void OnStickDecayTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            if (_isEnabled)
-            {
-                System.Diagnostics.Debug.WriteLine($"[DECAY TIMER] Tick at {DateTimeOffset.Now:HH:mm:ss.fff}");
-                _mouseMapper.UpdateStickDecay();
-            }
+            if (!_isEnabled) return;
+            _mouseMapper.UpdateStickDecay();
         }
 
-
         /// <summary>
-        /// Подключить контроллер один раз за сессию
+        /// Connect controller once per session
         /// </summary>
         public async Task<bool> ConnectControllerAsync()
         {
@@ -254,7 +246,6 @@ namespace MapperGangNET8.Services.MappingService
 
             try
             {
-                // Загружаем конфиг для типа контроллера
                 var config = await _configService.LoadConfigAsync();
 
                 ControllerType controllerType = config?.AppSettings?.SelectedControllerType == "DualShock 4 Controller"
@@ -263,29 +254,33 @@ namespace MapperGangNET8.Services.MappingService
 
                 bool success = await _controllerService.ConnectAsync(controllerType, 1);
                 _isControllerConnected = success;
+
+                System.Diagnostics.Debug.WriteLine($"[PIPELINE] Controller connected: {success}");
                 return success;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error connecting controller: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[PIPELINE] ❌ Error connecting controller: {ex.Message}");
                 return false;
             }
         }
 
         /// <summary>
-        /// Отключить контроллер
+        /// Disconnect controller
         /// </summary>
         public async Task DisconnectControllerAsync()
         {
             if (!_isControllerConnected) return;
 
-            SetEnabled(false); // Сначала останавливаем маппинг
+            SetEnabled(false);
             await _controllerService.DisconnectAsync();
             _isControllerConnected = false;
+
+            System.Diagnostics.Debug.WriteLine("[PIPELINE] Controller disconnected");
         }
 
         /// <summary>
-        /// Включить/выключить маппинг (контроллер остаётся подключен)
+        /// Enable/disable mapping (controller stays connected)
         /// </summary>
         public async Task SetMappingEnabledAsync(bool enabled)
         {
@@ -295,11 +290,11 @@ namespace MapperGangNET8.Services.MappingService
                 if (!connected) return;
             }
 
-            SetEnabled(enabled); // Используем существующий метод
+            SetEnabled(enabled);
         }
 
         /// <summary>
-        /// Обновить конфигурацию
+        /// Refresh configuration from config service
         /// </summary>
         public async Task RefreshConfigurationAsync()
         {
@@ -314,26 +309,28 @@ namespace MapperGangNET8.Services.MappingService
         {
             if (_disposed) return;
 
-            // Stop and dispose timer
+            // Stop timer
             _stickDecayTimer?.Stop();
             _stickDecayTimer?.Dispose();
-            
+
             // Unsubscribe from events
             _inputService.KeyDown -= OnKeyDown;
             _inputService.KeyUp -= OnKeyUp;
             _inputService.MouseStateChanged -= OnMouseStateChanged;
-            _blockingManager.MouseDeltaCaptured -= OnMouseDeltaCaptured;
+            _captureManager.MouseDeltaCaptured -= OnMouseDeltaCaptured;
 
-            // Stop input service
+            // Stop services
             if (_isEnabled)
             {
-                _inputService.Stop();
+                SetEnabled(false);
             }
 
-            // Dispose blocking manager
-            _blockingManager?.Dispose();
+            // Dispose capture manager
+            _captureManager?.Dispose();
 
             _disposed = true;
+
+            System.Diagnostics.Debug.WriteLine("[PIPELINE] Disposed");
         }
     }
 }

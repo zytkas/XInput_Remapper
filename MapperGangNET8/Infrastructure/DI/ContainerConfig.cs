@@ -5,8 +5,7 @@ using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.InputService;
 using MapperGangNET8.Services.ControllerService;
 using MapperGangNET8.Services.MappingService;
-using MapperGangNET8.Services.InputBlockingService;
-
+using MapperGangNET8.Services.InputCaptureService;
 namespace MapperGangNET8.Infrastructure.DI
 {
     public static class ContainerConfig
@@ -19,7 +18,7 @@ namespace MapperGangNET8.Infrastructure.DI
             services.AddSingleton<IControllerService, ViGemControllerService>();
             
             // Register Step 7 pipeline components
-            services.AddSingleton<InputBlockingManager>();
+            services.AddSingleton<InputCaptureManager>();
             services.AddSingleton<KeyToControllerMapper>();
             services.AddSingleton<MouseToStickMapper>();
             services.AddSingleton<InputPipeline>();

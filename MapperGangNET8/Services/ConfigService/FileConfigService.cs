@@ -295,6 +295,12 @@ namespace MapperGangNET8.Services.ConfigService
         {
             var config = new ConfigModel();
 
+            // Add default WASD movement settings
+            config.KeyboardSettings.MovementUp = "W";
+            config.KeyboardSettings.MovementLeft = "A";
+            config.KeyboardSettings.MovementDown = "S";
+            config.KeyboardSettings.MovementRight = "D";
+
             // Создаем профиль по умолчанию
             ProfileModel defaultProfile = new ProfileModel
             {
