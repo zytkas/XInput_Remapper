@@ -14,26 +14,54 @@ namespace MapperGangNET8.Services.InputCaptureService
     /// </summary>
     public class InputCaptureManager : IDisposable
     {
-        // Win32 API for mouse centering
-        [DllImport("user32.dll")]
-        private static extern bool SetCursorPos(int x, int y);
-        
-        [DllImport("user32.dll")]
-        private static extern bool GetCursorPos(out POINT lpPoint);
-        
+        #region MouHid P/Invoke
+        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern IntPtr MouHid_Create();
+
+        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern bool MouHid_Connect(IntPtr handle);
+
+        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern bool MouHid_SetBlocking(IntPtr handle, bool block);
+
+        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern bool MouHid_ReadMouseData(IntPtr handle,
+            [Out] MouseDataPacket[] data, out int packetCount, int maxPackets);
+
+        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        private static extern void MouHid_Destroy(IntPtr handle);
+
         [StructLayout(LayoutKind.Sequential)]
-        private struct POINT
+        private struct MouseDataPacket
         {
-            public int X;
-            public int Y;
+            public int DeltaX;
+            public int DeltaY;
+            public ushort ButtonFlags;
         }
+
+        private const ushort MOUSE_BUTTON_5_DOWN = 0x0100;
+        private const ushort MOUSE_BUTTON_5_UP = 0x0200;
+        const ushort MOUSE_LEFT_DOWN = 0x0001;
+        const ushort MOUSE_LEFT_UP = 0x0002;
+        const ushort MOUSE_RIGHT_DOWN = 0x0004;
+        const ushort MOUSE_RIGHT_UP = 0x0008;
+        const ushort MOUSE_MIDDLE_DOWN = 0x0010;
+        const ushort MOUSE_MIDDLE_UP = 0x0020;
+        const int INPUT_LEFT_DOWN = 1;
+        const int INPUT_LEFT_UP = 2;
+        const int INPUT_RIGHT_DOWN = 3;
+        const int INPUT_RIGHT_UP = 4;
+        #endregion
 
         private readonly HashSet<int> _blockedKeys = new HashSet<int>();
         private readonly HashSet<int> _blockedMouseButtons = new HashSet<int>();
-        private RawInputReceiverWindow _rawInputWindow;
-        private bool _rawInputEnabled = false;
+
+
+        private IntPtr _mouHidHandle = IntPtr.Zero;
+        private bool _mouHidEnabled = false;
         private bool _disposed = false;
-        private bool _mouseCenteringEnabled = false;
+        private CancellationTokenSource _readCts;
+        private Task _readTask;
 
         /// <summary>
         /// Event fired when mouse delta is captured from Raw Input
@@ -45,21 +73,8 @@ namespace MapperGangNET8.Services.InputCaptureService
         /// </summary>
         public event EventHandler<MouseButtonEventArgs> MouseButtonEvent;
 
-        /// <summary>
-        /// Check if a keyboard key should be blocked
-        /// </summary>
-        public bool ShouldBlockKey(int keyCode)
-        {
-            return _blockedKeys.Contains(keyCode);
-        }
-
-        /// <summary>
-        /// Check if a mouse button should be blocked
-        /// </summary>
-        public bool ShouldBlockMouseButton(int buttonCode)
-        {
-            return _blockedMouseButtons.Contains(buttonCode);
-        }
+        public bool ShouldBlockKey(int keyCode) => _blockedKeys.Contains(keyCode);
+        public bool ShouldBlockMouseButton(int buttonCode) => _blockedMouseButtons.Contains(buttonCode);
 
         /// <summary>
         /// Update blocked keys and mouse buttons based on current bindings
@@ -105,99 +120,190 @@ namespace MapperGangNET8.Services.InputCaptureService
             }
         }
 
+
+        public InputCaptureManager()
+        {
+            // Инициализируем MouHid драйвер при создании
+            InitializeMouHid();
+        }
+
+        private void InitializeMouHid()
+        {
+            _mouHidHandle = MouHid_Create();
+            if (_mouHidHandle != IntPtr.Zero)
+            {
+                if (MouHid_Connect(_mouHidHandle))
+                {
+                    System.Diagnostics.Debug.WriteLine("[MOUHID] Driver connected successfully");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[MOUHID] Failed to connect to driver");
+                }
+            }
+        }
+
+
+
         /// <summary>
         /// Enable or disable Raw Input capture for mouse deltas
         /// </summary>
-        public void EnableRawInput(bool enable)
+        public void EnableMouInput(bool enable)
         {
-            System.Diagnostics.Debug.WriteLine($"[RAW INPUT] EnableRawInput({enable}) - Current: _rawInputEnabled={_rawInputEnabled}");
+            System.Diagnostics.Debug.WriteLine($"[MOUHID] EnableRawInput({enable}) - Current:={_mouHidEnabled}");
 
-            if (enable && !_rawInputEnabled)
+            if (enable && !_mouHidEnabled)
             {
-                StartRawInput();
+                StartMouHidCapture();
             }
-            else if (!enable && _rawInputEnabled)
+            else if (!enable && _mouHidEnabled)
             {
-                StopRawInput();
+                StopMouHidCapture();
             }
         }
 
         /// <summary>
         /// Start Raw Input for clean mouse delta capture
         /// </summary>
-        private void StartRawInput()
+        private void StartMouHidCapture()
         {
+            if (_mouHidHandle == IntPtr.Zero) return;
+
             try
             {
-                System.Diagnostics.Debug.WriteLine("[RAW INPUT] Starting Raw Input capture...");
+                System.Diagnostics.Debug.WriteLine("[MOUHID] Starting mouse capture with blocking...");
 
-                // Create invisible window for receiving WM_INPUT messages
-                _rawInputWindow = new RawInputReceiverWindow();
-                _rawInputWindow.Input += OnRawInputReceived;
+                // Включаем блокировку мыши
+                if (MouHid_SetBlocking(_mouHidHandle, true))
+                {
+                    _mouHidEnabled = true;
 
-                // Register for mouse input (non-exclusive - doesn't block)
-                RawInputDevice.RegisterDevice(
-                    HidUsageAndPage.Mouse,
-                    RawInputDeviceFlags.InputSink, // Receives input even when not in foreground
-                    _rawInputWindow.Handle
-                );
+                    // Запускаем чтение данных
+                    _readCts = new CancellationTokenSource();
+                    _readTask = Task.Run(() => ReadMouseData(_readCts.Token));
 
-                _rawInputEnabled = true;
-                System.Diagnostics.Debug.WriteLine("[RAW INPUT] ✅ Raw Input started successfully");
+                    System.Diagnostics.Debug.WriteLine("[MOUHID] ✅ Mouse capture started, mouse blocked");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[MOUHID] ❌ Failed to enable blocking");
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RAW INPUT] ❌ Failed to start: {ex.Message}");
-                throw;
+                System.Diagnostics.Debug.WriteLine($"[MOUHID] ❌ Failed to start: {ex.Message}");
             }
         }
-
         /// <summary>
         /// Stop Raw Input capture
         /// </summary>
-        private void StopRawInput()
+        private void StopMouHidCapture()
         {
+            if (_mouHidHandle == IntPtr.Zero) return;
+
             try
             {
-                System.Diagnostics.Debug.WriteLine("[RAW INPUT] Stopping Raw Input capture...");
+                System.Diagnostics.Debug.WriteLine("[MOUHID] Stopping mouse capture...");
 
-                if (_rawInputWindow != null)
-                {
-                    // Unregister device
-                    RawInputDevice.UnregisterDevice(HidUsageAndPage.Mouse);
+                // Отключаем блокировку мыши
+                MouHid_SetBlocking(_mouHidHandle, false);
 
-                    // Cleanup window
-                    _rawInputWindow.Input -= OnRawInputReceived;
-                    _rawInputWindow.Dispose();
-                    _rawInputWindow = null;
-                }
+                _mouHidEnabled = false;
 
-                _rawInputEnabled = false;
-                System.Diagnostics.Debug.WriteLine("[RAW INPUT] ✅ Raw Input stopped successfully");
+                // Останавливаем чтение
+                _readCts?.Cancel();
+                _readTask?.Wait(1000);
+                _readCts?.Dispose();
+                _readCts = null;
+
+                System.Diagnostics.Debug.WriteLine("[MOUHID] ✅ Mouse capture stopped, mouse unblocked");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[RAW INPUT] ❌ Failed to stop: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[MOUHID] ❌ Failed to stop: {ex.Message}");
             }
         }
 
-        /// <summary>
-        /// Handle raw input mouse data
-        /// </summary>
-        private void OnRawInputReceived(object sender, RawInputEventArgs e)
+        private void ReadMouseData(CancellationToken token)
         {
-            if (e.Data is RawInputMouseData mouseData)
+            var buffer = new MouseDataPacket[64];
+            bool mouse5Pressed = false;
+
+            while (!token.IsCancellationRequested && _mouHidEnabled)
             {
-                var mouse = mouseData.Mouse;
-
-                // Only process movement deltas
-                if (mouse.LastX != 0 || mouse.LastY != 0)
+                if (MouHid_ReadMouseData(_mouHidHandle, buffer, out int count, buffer.Length))
                 {
-                    // Fire event with clean hardware deltas
-                    MouseDeltaCaptured?.Invoke(this,
-                        new MouseDeltaEventArgs(mouse.LastX, mouse.LastY));
+                    for (int i = 0; i < count; i++)
+                    {
+                        var packet = buffer[i];
 
-                    System.Diagnostics.Debug.WriteLine($"[RAW INPUT] Delta: X={mouse.LastX}, Y={mouse.LastY}");
+                        // Проверяем Mouse4 для временного отключения
+                        if ((packet.ButtonFlags & MOUSE_BUTTON_5_DOWN) != 0)
+                        {
+                            if (!mouse5Pressed)
+                            {
+                                mouse5Pressed = true;
+                                MouHid_SetBlocking(_mouHidHandle, false);
+                            }
+                        }
+                        else if ((packet.ButtonFlags & MOUSE_BUTTON_5_UP) != 0)
+                        {
+                            if (mouse5Pressed)
+                            {
+                                mouse5Pressed = false;
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] Mouse4 released - blocking again");
+                                MouHid_SetBlocking(_mouHidHandle, true);
+                            }
+                        }
+                        if (!mouse5Pressed)
+                        {
+                            if ((packet.ButtonFlags & MOUSE_LEFT_DOWN) != 0)
+                            {
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_LEFT_DOWN, true));
+                            }
+                            if ((packet.ButtonFlags & MOUSE_LEFT_UP) != 0)
+                            {
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_LEFT_UP, false));
+                            }
+
+                            if ((packet.ButtonFlags & MOUSE_RIGHT_DOWN) != 0)
+                            {
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_RIGHT_DOWN, true));
+                            }
+                            if ((packet.ButtonFlags & MOUSE_RIGHT_UP) != 0)
+                            {
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_RIGHT_UP, false));
+                            }
+
+                            if ((packet.ButtonFlags & MOUSE_MIDDLE_DOWN) != 0)
+                            {
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(3, true));
+                            }
+                            if ((packet.ButtonFlags & MOUSE_MIDDLE_UP) != 0)
+                            {
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(3, false));
+                            }
+
+                            // Передаем дельты движения
+                            if (packet.DeltaX != 0 || packet.DeltaY != 0)
+                            {
+                                MouseDeltaCaptured?.Invoke(this,
+                                    new MouseDeltaEventArgs(packet.DeltaX, packet.DeltaY));
+                            }
+                        }
+                    // Передаем дельты если не нажата Mouse4
+                    if (!mouse5Pressed && (packet.DeltaX != 0 || packet.DeltaY != 0))
+                        {
+                            MouseDeltaCaptured?.Invoke(this,
+                                new MouseDeltaEventArgs(packet.DeltaX, packet.DeltaY));
+
+                            System.Diagnostics.Debug.WriteLine($"[MOUHID] Delta: X={packet.DeltaX}, Y={packet.DeltaY}");
+                        }
+                    }
+                }
+                else
+                {
+                    Thread.Sleep(1);
                 }
             }
         }
@@ -209,7 +315,14 @@ namespace MapperGangNET8.Services.InputCaptureService
         {
             if (_disposed) return;
 
-            StopRawInput();
+            StopMouHidCapture();
+
+            if (_mouHidHandle != IntPtr.Zero)
+            {
+                MouHid_Destroy(_mouHidHandle);
+                _mouHidHandle = IntPtr.Zero;
+            }
+
             _disposed = true;
         }
     }
@@ -226,7 +339,7 @@ namespace MapperGangNET8.Services.InputCaptureService
         {
             DeltaX = deltaX;
             DeltaY = deltaY;
-        }
+            }
     }
 
     /// <summary>
@@ -234,11 +347,13 @@ namespace MapperGangNET8.Services.InputCaptureService
     /// </summary>
     public class MouseButtonEventArgs : EventArgs
     {
-        public int ButtonCode { get; }
+        public int Button { get; }
+        public bool IsPressed { get; }
 
-        public MouseButtonEventArgs(int buttonCode)
+        public MouseButtonEventArgs(int button, bool isPressed)
         {
-            ButtonCode = buttonCode;
+            Button = button;
+            IsPressed = isPressed;
         }
     }
 
@@ -252,61 +367,6 @@ namespace MapperGangNET8.Services.InputCaptureService
         public RawInputEventArgs(RawInputData data)
         {
             Data = data;
-        }
-    }
-
-    /// <summary>
-    /// Invisible window for receiving WM_INPUT messages
-    /// </summary>
-    internal sealed class RawInputReceiverWindow : IDisposable
-    {
-        public event EventHandler<RawInputEventArgs> Input;
-        private HwndSource _hwndSource;
-
-        public RawInputReceiverWindow()
-        {
-            // Create invisible window
-            var parameters = new HwndSourceParameters("RawInputReceiver")
-            {
-                WindowStyle = unchecked((int)0x80000000), // WS_POPUP
-                Width = 0,
-                Height = 0,
-                PositionX = -10000,
-                PositionY = -10000
-            };
-
-            _hwndSource = new HwndSource(parameters);
-            _hwndSource.AddHook(WndProc);
-        }
-
-        private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-        {
-            const int WM_INPUT = 0x00FF;
-
-            if (msg == WM_INPUT)
-            {
-                try
-                {
-                    var data = RawInputData.FromHandle(lParam);
-                    Input?.Invoke(this, new RawInputEventArgs(data));
-                    handled = true;
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"[RAW INPUT] Error processing WM_INPUT: {ex.Message}");
-                }
-            }
-
-            return IntPtr.Zero;
-        }
-
-        public IntPtr Handle => _hwndSource?.Handle ?? IntPtr.Zero;
-
-        public void Dispose()
-        {
-            _hwndSource?.RemoveHook(WndProc);
-            _hwndSource?.Dispose();
-            _hwndSource = null;
         }
     }
 }

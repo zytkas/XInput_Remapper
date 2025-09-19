@@ -218,10 +218,16 @@ namespace MapperGangNET8.Services.InputService
         private bool MouseState(object sender, InputButtons button, int x, int y)
         {
             _inputState.UpdateMousePosition(x, y);
-
+            if (button == InputButtons.Move)
+            {
+                //should be driver based staff, hooks are bad
+                return true;
+            }
             // Handle button events
             if (button != InputButtons.None && button != InputButtons.Move)
             {
+
+
                 var buttonCode = (int)button;
 
                 Debug.WriteLine($"[SOJU06] Mouse button event: {button} ({buttonCode})");

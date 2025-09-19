@@ -235,7 +235,7 @@ namespace MapperGangNET8.Services.MappingService
                     break;
                 case InputButtons.LeftMouseUp:
                     isPressed = false;
-                    mappingKey = InputButtons.LeftMouseDown; // Use down as mapping key for tracking
+                    mappingKey = InputButtons.LeftMouseDown;
                     break;
                 case InputButtons.RightMouseDown:
                     isPressed = true;
@@ -243,10 +243,9 @@ namespace MapperGangNET8.Services.MappingService
                     break;
                 case InputButtons.RightMouseUp:
                     isPressed = false;
-                    mappingKey = InputButtons.RightMouseDown; // Use down as mapping key for tracking
+                    mappingKey = InputButtons.RightMouseDown;
                     break;
                 case InputButtons.LeftDoubleClick:
-                    // Handle double click as press event
                     isPressed = true;
                     mappingKey = InputButtons.LeftDoubleClick;
                     break;
@@ -254,7 +253,6 @@ namespace MapperGangNET8.Services.MappingService
                 case InputButtons.WheelDown:
                 case InputButtons.WheelMoveUp:
                 case InputButtons.WheelMoveDown:
-                    // Handle wheel events as momentary presses
                     isPressed = true;
                     mappingKey = inputButton;
                     break;

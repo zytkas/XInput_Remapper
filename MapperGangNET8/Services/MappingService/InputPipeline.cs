@@ -6,6 +6,8 @@ using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.ControllerService;
 using MapperGangNET8.Services.InputCaptureService;
 using MapperGangNET8.Services.InputService;
+// В начало файла добавьте импорты:
+using System.Runtime.InteropServices;
 
 namespace MapperGangNET8.Services.MappingService
 {
@@ -14,6 +16,47 @@ namespace MapperGangNET8.Services.MappingService
     /// </summary>
     public class InputPipeline : IDisposable
     {
+        // Добавьте эти Win32 API декларации в класс InputPipeline:
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int x, int y);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        private static extern bool ClipCursor(ref RECT lpRect);
+
+        [DllImport("user32.dll")]
+        private static extern bool ClipCursor(IntPtr lpRect);
+
+
+        [DllImport("user32.dll")]
+        private static extern int GetSystemMetrics(int nIndex);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int X;
+            public int Y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        // Добавьте эти поля в класс:
+        private bool _mouseCenteringEnabled = false;
+        private POINT _centerPoint;
+        private int _screenWidth;
+        private int _screenHeight;
+        private const int SM_CXSCREEN = 0;  // Ширина экрана
+        private const int SM_CYSCREEN = 1;  // Высота экрана
+
         private readonly IInputService _inputService;
         private readonly IControllerService _controllerService;
         private readonly IConfigService _configService;
@@ -77,39 +120,38 @@ namespace MapperGangNET8.Services.MappingService
             if (enabled)
             {
                 System.Diagnostics.Debug.WriteLine("[PIPELINE] Enabling input pipeline...");
+                _screenWidth = GetSystemMetrics(SM_CXSCREEN);
+                _screenHeight = GetSystemMetrics(SM_CYSCREEN);
+                _centerPoint = new POINT
+                {
+                    X = _screenWidth / 2,
+                    Y = _screenHeight / 2
+                };
 
-                // Start Raw Input capture for mouse deltas
-                _captureManager.EnableRawInput(true);
-
-                // Start keyboard/mouse hooks
+                RECT clipRect = new RECT            
+                {
+                    Left = _centerPoint.X,
+                    Top = _centerPoint.Y,
+                    Right = _centerPoint.X + 1,
+                    Bottom = _centerPoint.Y + 1
+                };
+                ClipCursor(ref clipRect);
+                _mouseCenteringEnabled = true;
+                SetCursorPos(_centerPoint.X, _centerPoint.Y);
+                _captureManager.EnableMouInput(true);
                 _inputService.Start();
-
-
-                // Start stick decay timer
                 _stickDecayTimer.Start();
 
-                System.Diagnostics.Debug.WriteLine("[PIPELINE] ✅ Input pipeline enabled");
+                System.Diagnostics.Debug.WriteLine($"[PIPELINE] ✅ Input pipeline enabled. Mouse centering at ({_centerPoint.X}, {_centerPoint.Y})");
             }
             else
             {
                 System.Diagnostics.Debug.WriteLine("[PIPELINE] Disabling input pipeline...");
-
-                // Stop stick decay timer
+                _mouseCenteringEnabled = false;
+                ClipCursor(IntPtr.Zero);
                 _stickDecayTimer.Stop();
-
-                // Stop keyboard/mouse hooks
                 _inputService.Stop();
-
-
-                // Stop Raw Input capture
-                _captureManager.EnableRawInput(false);
-
-                // Reset controller state
-                _controllerService.ResetState();
-
-                // Reset mappers
-                _keyMapper.Reset();
-                _mouseMapper.Reset();
+                _captureManager.EnableMouInput(false);
 
                 System.Diagnostics.Debug.WriteLine("[PIPELINE] ✅ Input pipeline disabled");
             }
@@ -209,7 +251,6 @@ namespace MapperGangNET8.Services.MappingService
         {
             if (!_isEnabled) return;
 
-            // Process mouse button events
             if (e.Button != 0)
             {
                 _keyMapper.ProcessMouseButton(e.Button);
@@ -222,9 +263,13 @@ namespace MapperGangNET8.Services.MappingService
         private void OnMouseDeltaCaptured(object sender, MouseDeltaEventArgs e)
         {
             if (!_isEnabled) return;
-
             // Process raw mouse deltas
             _mouseMapper.ProcessMouseDelta(e.DeltaX, e.DeltaY);
+            if (_mouseCenteringEnabled)
+            {
+                // Возвращаем курсор в центр экрана
+                SetCursorPos(_centerPoint.X, _centerPoint.Y);
+            }
 
         }
 

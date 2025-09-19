@@ -1,128 +1,101 @@
 ﻿using System;
+using System.Linq;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ControllerService;
 
 namespace MapperGangNET8.Services.MappingService
 {
     /// <summary>
-    /// Maps mouse movement to controller right stick using Raw Input deltas
+    /// Maps mouse movement to controller right stick using zxmapper approach
     /// </summary>
     public class MouseToStickMapper
     {
         private readonly IControllerService _controllerService;
+        private double currentStickX = 0;
+        private double currentStickY = 0;
 
-        // Stick position accumulator
-        private double _rightStickX = 0.0;
-        private double _rightStickY = 0.0;
 
-        // Settings
-        private double _mouseSensitivity = 1.0;
-        private bool _enableStickDecay = true;
-        private double _stickDecayRate = 0.92; // Balanced decay rate
+        private const double SMOOTHING_RATE = 0.2; 
+        private double sensX = 12;
+        private double sensY = 12
+            ;
+        private int capFactor = 50;    
 
-        // Smoothing for anti-jitter
-        private double _smoothedStickX = 0.0;
-        private double _smoothedStickY = 0.0;
-        private const double SMOOTHING_FACTOR = 0.6; // 0.0 = no smoothing, 1.0 = maximum smoothing
-
-        // Tracking
-        private long _lastMouseMoveTime = 0;
-        private const long DECAY_START_DELAY_MS = 80; // Slightly more time before decay starts
+        // Время последнего движения для автосброса
+        private DateTime _lastMouseMoveTime = DateTime.Now;
+        private const int MOUSE_RESET_DELAY_MS = 15; // Быстрый сброс как в zxmapper
 
         public MouseToStickMapper(IControllerService controllerService)
         {
             _controllerService = controllerService;
+
         }
 
         /// <summary>
-        /// Process raw mouse delta and map to right stick
+        /// Process raw mouse delta (zxmapper style)
         /// </summary>
         public void ProcessMouseDelta(int deltaX, int deltaY)
         {
-            // Skip if no movement
-            if (deltaX == 0 && deltaY == 0) return;
+            // Целевая позиция на основе дельты
+            double targetX = (deltaX * sensX) / capFactor;
+            double targetY = -(deltaY * sensY) / capFactor;
 
-            // Update last move time
-            _lastMouseMoveTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            // Ограничиваем
+            targetX = Math.Clamp(targetX, -1.0, 1.0);
+            targetY = Math.Clamp(targetY, -1.0, 1.0);
 
-            // Apply sensitivity scaling with smoothing
-            double rawX = (deltaX * _mouseSensitivity) / 60.0; // More conservative divisor
-            double rawY = -(deltaY * _mouseSensitivity) / 60.0; // Invert Y for standard camera controls
+            // Плавная интерполяция к целевой позиции
+            currentStickX = Lerp(currentStickX, targetX, SMOOTHING_RATE);
+            currentStickY = Lerp(currentStickY, targetY, SMOOTHING_RATE);
 
-            // Apply non-linear sensitivity curve for better feel
-            double targetX = Math.Clamp(ApplySensitivityCurve(rawX), -1.0, 1.0);
-            double targetY = Math.Clamp(ApplySensitivityCurve(rawY), -1.0, 1.0);
+            // Мертвая зона для малых значений
+            if (Math.Abs(currentStickX) < 0.01) currentStickX = 0;
+            if (Math.Abs(currentStickY) < 0.01) currentStickY = 0;
 
-            // Apply exponential smoothing to reduce jitter
-            _smoothedStickX = _smoothedStickX * SMOOTHING_FACTOR + targetX * (1.0 - SMOOTHING_FACTOR);
-            _smoothedStickY = _smoothedStickY * SMOOTHING_FACTOR + targetY * (1.0 - SMOOTHING_FACTOR);
+            // Применяем S-кривую для плавности
+            double finalX = ApplySCurve(currentStickX);
+            double finalY = ApplySCurve(currentStickY);
 
-            // Apply smoothed values to controller
-            _controllerService.SetAxis(ControllerAxis.RightThumbX, _smoothedStickX);
-            _controllerService.SetAxis(ControllerAxis.RightThumbY, _smoothedStickY);
-
-            // Update internal state for decay
-            _rightStickX = _smoothedStickX;
-            _rightStickY = _smoothedStickY;
-
-            System.Diagnostics.Debug.WriteLine($"[MOUSE MAPPER] Delta({deltaX},{deltaY}) -> Raw({rawX:F3},{rawY:F3}) -> Target({targetX:F3},{targetY:F3}) -> Smoothed({_smoothedStickX:F3},{_smoothedStickY:F3})");
+            _controllerService.SetAxis(ControllerAxis.RightThumbX, finalX);
+            _controllerService.SetAxis(ControllerAxis.RightThumbY, finalY);
+        }
+        // Линейная интерполяция
+        private double Lerp(double current, double target, double rate)
+        {
+            return current + (target - current) * rate;
         }
 
+        // S-образная кривая для плавности
+        private double ApplySCurve(double input)
+        {
+            // Сигмоидная функция для плавного ускорения/замедления
+            double abs = Math.Abs(input);
+            double curved = abs * abs * (3.0 - 2.0 * abs); // Кубическая интерполяция
+            return Math.Sign(input) * curved;
+        }
+
+
+
+
         /// <summary>
-        /// Update stick decay - gradually return stick to center when no input
+        /// Check for mouse inactivity and reset (как в zxmapper)
         /// </summary>
         public void UpdateStickDecay()
         {
-            if (!_enableStickDecay) return;
+            double millisecondsSinceMove = (DateTime.Now - _lastMouseMoveTime).TotalMilliseconds;
 
-            // Check if enough time has passed since last movement
-            long timeSinceMove = DateTimeOffset.Now.ToUnixTimeMilliseconds() - _lastMouseMoveTime;
-
-            if (timeSinceMove > DECAY_START_DELAY_MS)
+            if (millisecondsSinceMove > 10) // Быстрый, но плавный возврат
             {
-                // Gradual decay that gets faster over time for smooth feel
-                if (timeSinceMove > 200) // After 200ms, faster decay
-                {
-                    _rightStickX *= 0.85;
-                    _rightStickY *= 0.85;
-                }
-                else
-                {
-                    // Normal decay for first 120ms
-                    _rightStickX *= _stickDecayRate;
-                    _rightStickY *= _stickDecayRate;
-                }
+                // Плавно возвращаем к центру
+                currentStickX = Lerp(currentStickX, 0, 0.2);
+                currentStickY = Lerp(currentStickY, 0, 0.2);
 
-                // Snap to zero if very small to prevent drift
-                if (Math.Abs(_rightStickX) < 0.03) _rightStickX = 0;
-                if (Math.Abs(_rightStickY) < 0.03) _rightStickY = 0;
+                if (Math.Abs(currentStickX) < 0.01) currentStickX = 0;
+                if (Math.Abs(currentStickY) < 0.01) currentStickY = 0;
 
-                // Update controller
-                _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
-                _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
-
-                System.Diagnostics.Debug.WriteLine($"[MOUSE MAPPER] Decay: Stick({_rightStickX:F3},{_rightStickY:F3}) after {timeSinceMove}ms");
+                _controllerService.SetAxis(ControllerAxis.RightThumbX, currentStickX);
+                _controllerService.SetAxis(ControllerAxis.RightThumbY, currentStickY);
             }
-        }
-
-        /// <summary>
-        /// Apply non-linear sensitivity curve for better mouse feel
-        /// </summary>
-        private double ApplySensitivityCurve(double input)
-        {
-            // Dead zone for very small movements
-            if (Math.Abs(input) < 0.005)
-                return 0.0;
-
-            // Non-linear curve: slower for small movements, faster for large movements
-            // Use a power curve for more natural feel
-            double sign = Math.Sign(input);
-            double absInput = Math.Abs(input);
-            
-            // Apply softer power curve (power of 1.1 for smoother large movements)
-            double curved = Math.Pow(absInput, 1.1) * sign;
-            
-            return curved;
         }
 
         /// <summary>
@@ -130,14 +103,12 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         public void Reset()
         {
-            _rightStickX = 0;
-            _rightStickY = 0;
-            _lastMouseMoveTime = 0;
-
+            // Сброс позиции
             _controllerService.SetAxis(ControllerAxis.RightThumbX, 0);
             _controllerService.SetAxis(ControllerAxis.RightThumbY, 0);
+            _lastMouseMoveTime = DateTime.Now;
 
-            System.Diagnostics.Debug.WriteLine("[MOUSE MAPPER] Reset stick to center");
+            System.Diagnostics.Debug.WriteLine("[MOUSE-ZX] Reset to center");
         }
 
         /// <summary>
@@ -145,28 +116,42 @@ namespace MapperGangNET8.Services.MappingService
         /// </summary>
         public void UpdateConfiguration(ConfigModel config)
         {
-            if (config?.MouseSettings != null)
+            if (config?.SensitivitySettings != null)
             {
-                // Update sensitivity (convert from percentage if needed)
-                _mouseSensitivity = config.MouseSettings.MouseSensitivity / 100.0;
+                // Можно загрузить настройки из конфига
+                // Пока используем захардкоженные значения из zxmapper
 
-                // Decay settings can be configured here
-                _enableStickDecay = true; // Or from config
-                _stickDecayRate = 0.85; // Or from config
-
-                System.Diagnostics.Debug.WriteLine($"[MOUSE MAPPER] Config updated - Sensitivity: {_mouseSensitivity:F2}");
+                // sensX = config.SensitivitySettings.MouseXAxisSensitivity / 100.0;
+                // sensY = config.SensitivitySettings.MouseYAxisSensitivity / 100.0;
             }
         }
 
         /// <summary>
-        /// Configure stick decay behavior
+        /// Set sensitivity values (для тестирования)
+        /// </summary>
+        public void SetSensitivity(double x, double y)
+        {
+            sensX = x;
+            sensY = y;
+            System.Diagnostics.Debug.WriteLine($"[MOUSE-ZX] Sensitivity updated - X:{sensX} Y:{sensY}");
+        }
+
+        /// <summary>
+        /// Set cap factor (maximum value before scaling)
+        /// </summary>
+        public void SetCapFactor(int cap)
+        {
+            capFactor = cap;
+            System.Diagnostics.Debug.WriteLine($"[MOUSE-ZX] Cap factor: {capFactor}");
+        }
+
+        /// <summary>
+        /// Configure stick decay behavior (для совместимости)
         /// </summary>
         public void SetStickDecaySettings(bool enabled, double decayRate)
         {
-            _enableStickDecay = enabled;
-            _stickDecayRate = Math.Clamp(decayRate, 0.0, 1.0);
-
-            System.Diagnostics.Debug.WriteLine($"[MOUSE MAPPER] Decay settings - Enabled: {enabled}, Rate: {decayRate:F2}");
+            // В zxmapper используется CheckForMouseInactivity с фиксированной задержкой
+            System.Diagnostics.Debug.WriteLine($"[MOUSE-ZX] Using zxmapper-style decay with {MOUSE_RESET_DELAY_MS}ms delay");
         }
     }
 }
