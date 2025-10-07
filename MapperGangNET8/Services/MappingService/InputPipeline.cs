@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using MapperGangNET8.Models;
+﻿using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
 using MapperGangNET8.Services.ControllerService;
 using MapperGangNET8.Services.InputCaptureService;
 using MapperGangNET8.Services.InputService;
-// В начало файла добавьте импорты:
+using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace MapperGangNET8.Services.MappingService
 {
@@ -16,7 +16,6 @@ namespace MapperGangNET8.Services.MappingService
     /// </summary>
     public class InputPipeline : IDisposable
     {
-        // Добавьте эти Win32 API декларации в класс InputPipeline:
         [DllImport("user32.dll")]
         private static extern bool SetCursorPos(int x, int y);
 
@@ -28,7 +27,6 @@ namespace MapperGangNET8.Services.MappingService
 
         [DllImport("user32.dll")]
         private static extern bool ClipCursor(IntPtr lpRect);
-
 
         [DllImport("user32.dll")]
         private static extern int GetSystemMetrics(int nIndex);
@@ -49,13 +47,12 @@ namespace MapperGangNET8.Services.MappingService
             public int Bottom;
         }
 
-        // Добавьте эти поля в класс:
         private bool _mouseCenteringEnabled = false;
         private POINT _centerPoint;
         private int _screenWidth;
         private int _screenHeight;
-        private const int SM_CXSCREEN = 0;  // Ширина экрана
-        private const int SM_CYSCREEN = 1;  // Высота экрана
+        private const int SM_CXSCREEN = 0;
+        private const int SM_CYSCREEN = 1;
 
         private readonly IInputService _inputService;
         private readonly IControllerService _controllerService;
@@ -68,8 +65,9 @@ namespace MapperGangNET8.Services.MappingService
         private bool _isEnabled = false;
         private bool _disposed = false;
 
-        // Timer for stick decay (60 FPS)
-        private readonly System.Timers.Timer _stickDecayTimer;
+        // Timer for smooth stick updates (120 FPS for extra smoothness)
+        private readonly System.Timers.Timer _updateTimer;
+        private const int UPDATE_INTERVAL_MS = 4; // ~120 FPS для ультра-плавности
 
         public InputPipeline(
             IInputService inputService,
@@ -97,15 +95,13 @@ namespace MapperGangNET8.Services.MappingService
             _inputService.KeyUp += OnKeyUp;
 
             // Subscribe to mouse events
-            _inputService.MouseStateChanged += OnMouseStateChanged;
-
-            // Subscribe to raw mouse delta events
+            _captureManager.MouseButtonEvent += OnMouseButtonFromDriver;
             _captureManager.MouseDeltaCaptured += OnMouseDeltaCaptured;
 
-            // Setup stick decay timer (60 FPS)
-            _stickDecayTimer = new System.Timers.Timer(16); // ~60 FPS
-            _stickDecayTimer.Elapsed += OnStickDecayTimerElapsed;
-            _stickDecayTimer.AutoReset = true;
+            // Setup update timer for smooth interpolation
+            _updateTimer = new System.Timers.Timer(UPDATE_INTERVAL_MS);
+            _updateTimer.Elapsed += OnUpdateTimerElapsed;
+            _updateTimer.AutoReset = true;
         }
 
         /// <summary>
@@ -120,6 +116,8 @@ namespace MapperGangNET8.Services.MappingService
             if (enabled)
             {
                 System.Diagnostics.Debug.WriteLine("[PIPELINE] Enabling input pipeline...");
+
+                // Setup screen centering
                 _screenWidth = GetSystemMetrics(SM_CXSCREEN);
                 _screenHeight = GetSystemMetrics(SM_CYSCREEN);
                 _centerPoint = new POINT
@@ -128,7 +126,8 @@ namespace MapperGangNET8.Services.MappingService
                     Y = _screenHeight / 2
                 };
 
-                RECT clipRect = new RECT            
+                // Clip cursor to center point for relative mouse input
+                RECT clipRect = new RECT
                 {
                     Left = _centerPoint.X,
                     Top = _centerPoint.Y,
@@ -138,20 +137,28 @@ namespace MapperGangNET8.Services.MappingService
                 ClipCursor(ref clipRect);
                 _mouseCenteringEnabled = true;
                 SetCursorPos(_centerPoint.X, _centerPoint.Y);
+
+                // Start services
                 _captureManager.EnableMouInput(true);
                 _inputService.Start();
-                _stickDecayTimer.Start();
-
+                _updateTimer.Start(); // ← Запускаем таймер для плавных обновлений
+                _mouseMapper.EnableDebugLog();
                 System.Diagnostics.Debug.WriteLine($"[PIPELINE] ✅ Input pipeline enabled. Mouse centering at ({_centerPoint.X}, {_centerPoint.Y})");
+                System.Diagnostics.Debug.WriteLine($"[PIPELINE] ✅ Update timer running at {1000.0 / UPDATE_INTERVAL_MS:F0} FPS");
             }
             else
             {
                 System.Diagnostics.Debug.WriteLine("[PIPELINE] Disabling input pipeline...");
+
                 _mouseCenteringEnabled = false;
-                ClipCursor(IntPtr.Zero);
-                _stickDecayTimer.Stop();
+                ClipCursor(IntPtr.Zero); // Release cursor clip
+
+                _updateTimer.Stop();
                 _inputService.Stop();
                 _captureManager.EnableMouInput(false);
+
+                _keyMapper.Reset();
+                _mouseMapper.Reset();
 
                 System.Diagnostics.Debug.WriteLine("[PIPELINE] ✅ Input pipeline disabled");
             }
@@ -164,7 +171,63 @@ namespace MapperGangNET8.Services.MappingService
         {
             // Update mappers
             _keyMapper.UpdateConfiguration(config);
-            _mouseMapper.UpdateConfiguration(config);
+
+            // Update MouseToStickMapper with all settings
+            if (config?.MouseSettings != null)
+            {
+                var mouseSettings = config.MouseSettings;
+
+                // Sensitivity (0-200%)
+                float sensX = (float)mouseSettings.MouseSensitivityX;
+                float sensY = (float)mouseSettings.MouseSensitivityY;
+                _mouseMapper.SetSensitivityPercent(sensX, sensY);
+
+                // Scale Factors: Convert from percentage (0-200%) to actual values (5-100000)
+                // 100% = 10000 (default)
+                float scaleX = (float)(mouseSettings.ScaleFactorX * 100.0); // 100% → 10000
+                float scaleY = (float)(mouseSettings.ScaleFactorY * 100.0);
+                _mouseMapper.SetScaleFactor(scaleX, scaleY);
+
+                // Smoothing (0-10)
+                _mouseMapper.SetSmoothing((uint)mouseSettings.MouseSmoothing);
+
+                // Noise Filter (0-10)
+                _mouseMapper.SetNoiseFilter((uint)mouseSettings.NoiseFilter);
+
+                // Spring Mode: Convert from string to bool
+                bool springMode = mouseSettings.MouseJoystickMode == "Spring Mode";
+                _mouseMapper.SetSpringMode(springMode);
+
+                // Return Time (5-255ms)
+                _mouseMapper.SetReturnTime((byte)mouseSettings.ReturnTime);
+
+                // Axis Inversion
+                _mouseMapper.SetInversion(mouseSettings.InvertXAxis, mouseSettings.InvertYAxis);
+
+                // Response Curve
+                switch (mouseSettings.ResponseCurveType)
+                {
+                    case "Precision":
+                        _mouseMapper.SetPrecisionCurve();
+                        break;
+                    case "Aggressive":
+                        _mouseMapper.SetAggressiveCurve();
+                        break;
+                    case "Linear":
+                    default:
+                        _mouseMapper.SetLinearCurve();
+                        break;
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[PIPELINE] Mouse settings updated:");
+                System.Diagnostics.Debug.WriteLine($"  Mode: {mouseSettings.MouseJoystickMode} (SpringMode={springMode})");
+                System.Diagnostics.Debug.WriteLine($"  Sensitivity: X={sensX}%, Y={sensY}%");
+                System.Diagnostics.Debug.WriteLine($"  ScaleFactor: X={scaleX:F0} ({mouseSettings.ScaleFactorX}%), Y={scaleY:F0} ({mouseSettings.ScaleFactorY}%)");
+                System.Diagnostics.Debug.WriteLine($"  Smoothing: {mouseSettings.MouseSmoothing}, NoiseFilter: {mouseSettings.NoiseFilter}");
+                System.Diagnostics.Debug.WriteLine($"  ReturnTime: {mouseSettings.ReturnTime}ms");
+                System.Diagnostics.Debug.WriteLine($"  Inversion: X={mouseSettings.InvertXAxis}, Y={mouseSettings.InvertYAxis}");
+                System.Diagnostics.Debug.WriteLine($"  ResponseCurve: {mouseSettings.ResponseCurveType}");
+            }
 
             // Update blocked keys for keyboard
             var blockedKeys = new List<KeyBindingModel>();
@@ -247,39 +310,41 @@ namespace MapperGangNET8.Services.MappingService
         /// <summary>
         /// Handle mouse state changes (button events)
         /// </summary>
-        private void OnMouseStateChanged(object sender, InputMouseEventArgs e)
+        private void OnMouseButtonFromDriver(object sender, MouseButtonEventArgs e)
         {
             if (!_isEnabled) return;
 
-            if (e.Button != 0)
-            {
-                _keyMapper.ProcessMouseButton(e.Button);
-            }
+            System.Diagnostics.Debug.WriteLine($"[PIPELINE] Mouse button from driver: {e.Button}, Pressed: {e.IsPressed}");
+            _keyMapper.ProcessMouseButton(e.Button);
         }
 
         /// <summary>
-        /// Handle raw mouse delta events
+        /// Handle raw mouse delta events (accumulates micromovements)
         /// </summary>
         private void OnMouseDeltaCaptured(object sender, MouseDeltaEventArgs e)
         {
             if (!_isEnabled) return;
-            // Process raw mouse deltas
+
+            // Process raw mouse deltas (they accumulate internally in MouseToStickMapper)
             _mouseMapper.ProcessMouseDelta(e.DeltaX, e.DeltaY);
+
+            // Re-center cursor for continuous relative input
             if (_mouseCenteringEnabled)
             {
-                // Возвращаем курсор в центр экрана
                 SetCursorPos(_centerPoint.X, _centerPoint.Y);
             }
-
         }
 
         /// <summary>
-        /// Handle stick decay timer
+        /// Handle smooth update timer (interpolation + decay)
         /// </summary>
-        private void OnStickDecayTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
+        private void OnUpdateTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (!_isEnabled) return;
-            _mouseMapper.UpdateStickDecay();
+
+            // Update smooth interpolation and decay
+            // This is called at high frequency (120 FPS) for ultra-smooth stick movement
+            _mouseMapper.Update();
         }
 
         /// <summary>
@@ -355,13 +420,13 @@ namespace MapperGangNET8.Services.MappingService
             if (_disposed) return;
 
             // Stop timer
-            _stickDecayTimer?.Stop();
-            _stickDecayTimer?.Dispose();
+            _updateTimer?.Stop();
+            _updateTimer?.Dispose();
 
             // Unsubscribe from events
             _inputService.KeyDown -= OnKeyDown;
             _inputService.KeyUp -= OnKeyUp;
-            _inputService.MouseStateChanged -= OnMouseStateChanged;
+            _captureManager.MouseButtonEvent -= OnMouseButtonFromDriver;
             _captureManager.MouseDeltaCaptured -= OnMouseDeltaCaptured;
 
             // Stop services

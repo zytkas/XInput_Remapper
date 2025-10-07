@@ -12,12 +12,11 @@ namespace MapperGangNET8.Views
         private readonly MainViewModel _mainViewModel;
         private readonly MouseViewModel _mouseViewModel;
         private readonly KeyboardViewModel _keyboardViewModel;
-        private readonly SensitivityViewModel _sensitivityViewModel;
         private readonly SettingsViewModel _settingsViewModel;
         private readonly IServiceProvider _serviceProvider;
 
         public MainWindow(MainViewModel mainViewModel, MouseViewModel mouseViewModel,
-            KeyboardViewModel keyboardViewModel, SensitivityViewModel sensitivityViewModel, SettingsViewModel settingsViewModel,
+            KeyboardViewModel keyboardViewModel, SettingsViewModel settingsViewModel,
             IServiceProvider serviceProvider)
         {
             InitializeComponent();
@@ -25,11 +24,8 @@ namespace MapperGangNET8.Views
             _mainViewModel = mainViewModel;
             _mouseViewModel = mouseViewModel;
             _keyboardViewModel = keyboardViewModel;
-            _sensitivityViewModel = sensitivityViewModel;
-            _sensitivityViewModel = sensitivityViewModel;
             _settingsViewModel = settingsViewModel;
             DataContext = _mainViewModel;
-            _settingsViewModel = settingsViewModel;
             _serviceProvider = serviceProvider;
         }
 
@@ -47,7 +43,6 @@ namespace MapperGangNET8.Views
             DashboardTab.Appearance = ControlAppearance.Secondary;
             MouseTab.Appearance = ControlAppearance.Secondary;
             KeyboardTab.Appearance = ControlAppearance.Secondary;
-            SensitivityTab.Appearance = ControlAppearance.Secondary;
             SettingsTab.Appearance = ControlAppearance.Secondary;
 
             switch (selectedIndex)
@@ -55,8 +50,7 @@ namespace MapperGangNET8.Views
                 case 0: DashboardTab.Appearance = ControlAppearance.Primary; break;
                 case 1: MouseTab.Appearance = ControlAppearance.Primary; break;
                 case 2: KeyboardTab.Appearance = ControlAppearance.Primary; break;
-                case 3: SensitivityTab.Appearance = ControlAppearance.Primary; break;
-                case 4: SettingsTab.Appearance = ControlAppearance.Primary; break;
+                case 3: SettingsTab.Appearance = ControlAppearance.Primary; break;
             }
         }
 
@@ -80,11 +74,7 @@ namespace MapperGangNET8.Views
                     ContentContainer.Content = new KeyboardView { DataContext = _keyboardViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;
-                case 3: // Sensitivity
-                    ContentContainer.Content = new SensitivityView { DataContext = _sensitivityViewModel };
-                    ContentContainer.Visibility = Visibility.Visible;
-                    break;
-                case 4: // Settings
+                case 3: // Settings
                     ContentContainer.Content = new SettingsView { DataContext = _settingsViewModel };
                     ContentContainer.Visibility = Visibility.Visible;
                     break;

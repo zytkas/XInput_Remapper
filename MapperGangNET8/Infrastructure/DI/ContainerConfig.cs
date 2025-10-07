@@ -30,7 +30,6 @@ namespace MapperGangNET8.Infrastructure.DI
 
             services.AddSingleton<MouseViewModel>();
             services.AddSingleton<KeyboardViewModel>();
-            services.AddSingleton<SensitivityViewModel>();
             services.AddSingleton<SettingsViewModel>();
             services.AddSingleton<MainViewModel>();
 

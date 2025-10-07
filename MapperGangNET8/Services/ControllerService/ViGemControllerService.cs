@@ -24,8 +24,9 @@ namespace MapperGangNET8.Services.ControllerService
         private ControllerType _controllerType;
         private int _controllerIndex;
         private bool _disposed;
-        private readonly DispatcherTimer _updateTimer;
-
+        private DateTime _lastSubmitTime = DateTime.Now;
+        private int _submitCount = 0;
+        private DateTime _lastLogTime = DateTime.Now;
         /// <summary>
         /// Event triggered when controller connection state changes
         /// </summary>
@@ -57,11 +58,6 @@ namespace MapperGangNET8.Services.ControllerService
         public ViGemControllerService()
         {
             _currentState = new ControllerState();
-            _updateTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(10) // 100Hz update rate
-            };
-            _updateTimer.Tick += OnUpdateTimerTick;
         }
 
         /// <summary>
@@ -99,9 +95,6 @@ namespace MapperGangNET8.Services.ControllerService
                             break;
                     }
 
-                    // Start update timer
-                    _updateTimer.Start();
-
                     _isConnected = true;
                     OnConnectionStateChanged(true);
 
@@ -128,8 +121,6 @@ namespace MapperGangNET8.Services.ControllerService
                 {
                     return;
                 }
-
-                _updateTimer.Stop();
                 CleanupResources();
 
                 _isConnected = false;
@@ -185,15 +176,21 @@ namespace MapperGangNET8.Services.ControllerService
         /// </summary>
         /// <param name="axis">Axis to set</param>
         /// <param name="value">Value to set (-1.0 to 1.0 for sticks, 0.0 to 1.0 for triggers)</param>
+        /// 
+
+        private int _setAxisCallCount = 0;
+        private int _submitReportCallCount = 0;
+
         public void SetAxis(ControllerAxis axis, double value)
         {
             if (!_isConnected)
             {
                 return;
             }
+            _setAxisCallCount++; // ← Добавь счетчик вызовов SetAxis
 
             _currentState.SetAxis(axis, value);
-            UpdateHardwareState();
+            UpdateHardwareState(); // ← Внутри SubmitReport
             OnControllerStateUpdated();
         }
 
@@ -345,9 +342,16 @@ namespace MapperGangNET8.Services.ControllerService
             _xbox360Controller.SetButtonState(Xbox360Button.Down, (dPadValue & 2) != 0);
             _xbox360Controller.SetButtonState(Xbox360Button.Left, (dPadValue & 4) != 0);
             _xbox360Controller.SetButtonState(Xbox360Button.Right, (dPadValue & 8) != 0);
-
-            // Submit the report
+            _submitReportCallCount++;
             _xbox360Controller.SubmitReport();
+
+            // Лог
+            if (_submitReportCallCount % 100 == 0)
+            {
+             //   Debug.WriteLine($"[VIGEM] SetAxis called: {_setAxisCallCount}, SubmitReport called: {_submitReportCallCount}");
+                _setAxisCallCount = 0;
+                _submitReportCallCount = 0;
+            }
         }
 
         /// <summary>
@@ -417,19 +421,6 @@ namespace MapperGangNET8.Services.ControllerService
         }
 
         /// <summary>
-        /// Timer tick handler
-        /// </summary>
-        private void OnUpdateTimerTick(object sender, EventArgs e)
-        {
-            // This is called periodically to ensure controller state is maintained
-            // Some games need frequent updates
-            if (_isConnected)
-            {
-                UpdateHardwareState();
-            }
-        }
-
-        /// <summary>
         /// Raise connection state changed event
         /// </summary>
         private void OnConnectionStateChanged(bool isConnected, string errorMessage = null)
@@ -468,7 +459,6 @@ namespace MapperGangNET8.Services.ControllerService
 
             if (disposing)
             {
-                _updateTimer.Stop();
                 CleanupResources();
             }
 

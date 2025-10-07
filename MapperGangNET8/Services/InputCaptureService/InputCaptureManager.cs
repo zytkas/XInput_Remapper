@@ -1,11 +1,14 @@
-﻿using System;
+﻿using Input;
+using Linearstar.Windows.RawInput;
+using MapperGangNET8.Models;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Interop;
-using MapperGangNET8.Models;
-using Linearstar.Windows.RawInput;
 
 namespace MapperGangNET8.Services.InputCaptureService
 {
@@ -15,20 +18,20 @@ namespace MapperGangNET8.Services.InputCaptureService
     public class InputCaptureManager : IDisposable
     {
         #region MouHid P/Invoke
-        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("MouHid.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern IntPtr MouHid_Create();
 
-        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("MouHid.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern bool MouHid_Connect(IntPtr handle);
 
-        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("MouHid.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern bool MouHid_SetBlocking(IntPtr handle, bool block);
 
-        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("MouHid.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern bool MouHid_ReadMouseData(IntPtr handle,
             [Out] MouseDataPacket[] data, out int packetCount, int maxPackets);
 
-        [DllImport("MouHidClient.dll", CallingConvention = CallingConvention.StdCall)]
+        [DllImport("MouHid.dll", CallingConvention = CallingConvention.StdCall)]
         private static extern void MouHid_Destroy(IntPtr handle);
 
         [StructLayout(LayoutKind.Sequential)]
@@ -47,12 +50,8 @@ namespace MapperGangNET8.Services.InputCaptureService
         const ushort MOUSE_RIGHT_UP = 0x0008;
         const ushort MOUSE_MIDDLE_DOWN = 0x0010;
         const ushort MOUSE_MIDDLE_UP = 0x0020;
-        const int INPUT_LEFT_DOWN = 1;
-        const int INPUT_LEFT_UP = 2;
-        const int INPUT_RIGHT_DOWN = 3;
-        const int INPUT_RIGHT_UP = 4;
         #endregion
-
+        private StreamWriter _logWriter;
         private readonly HashSet<int> _blockedKeys = new HashSet<int>();
         private readonly HashSet<int> _blockedMouseButtons = new HashSet<int>();
 
@@ -171,22 +170,16 @@ namespace MapperGangNET8.Services.InputCaptureService
 
             try
             {
-                System.Diagnostics.Debug.WriteLine("[MOUHID] Starting mouse capture with blocking...");
+                // Открываем файл для логов
+                _logWriter = new StreamWriter("mouhid_log.txt", false) { AutoFlush = true };
+                _logWriter.WriteLine($"=== MOUHID Log started at {DateTime.Now} ===");
 
-                // Включаем блокировку мыши
                 if (MouHid_SetBlocking(_mouHidHandle, true))
                 {
                     _mouHidEnabled = true;
-
-                    // Запускаем чтение данных
                     _readCts = new CancellationTokenSource();
                     _readTask = Task.Run(() => ReadMouseData(_readCts.Token));
-
-                    System.Diagnostics.Debug.WriteLine("[MOUHID] ✅ Mouse capture started, mouse blocked");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("[MOUHID] ❌ Failed to enable blocking");
+                    System.Diagnostics.Debug.WriteLine("[MOUHID] ✅ Mouse capture started");
                 }
             }
             catch (Exception ex)
@@ -194,6 +187,7 @@ namespace MapperGangNET8.Services.InputCaptureService
                 System.Diagnostics.Debug.WriteLine($"[MOUHID] ❌ Failed to start: {ex.Message}");
             }
         }
+
         /// <summary>
         /// Stop Raw Input capture
         /// </summary>
@@ -204,13 +198,9 @@ namespace MapperGangNET8.Services.InputCaptureService
             try
             {
                 System.Diagnostics.Debug.WriteLine("[MOUHID] Stopping mouse capture...");
-
-                // Отключаем блокировку мыши
                 MouHid_SetBlocking(_mouHidHandle, false);
 
                 _mouHidEnabled = false;
-
-                // Останавливаем чтение
                 _readCts?.Cancel();
                 _readTask?.Wait(1000);
                 _readCts?.Dispose();
@@ -223,27 +213,45 @@ namespace MapperGangNET8.Services.InputCaptureService
                 System.Diagnostics.Debug.WriteLine($"[MOUHID] ❌ Failed to stop: {ex.Message}");
             }
         }
+        private int _readCallCount = 0;
+        private int _totalPacketsRead = 0;
 
         private void ReadMouseData(CancellationToken token)
         {
             var buffer = new MouseDataPacket[64];
             bool mouse5Pressed = false;
-
+            var sw = System.Diagnostics.Stopwatch.StartNew();
             while (!token.IsCancellationRequested && _mouHidEnabled)
             {
                 if (MouHid_ReadMouseData(_mouHidHandle, buffer, out int count, buffer.Length))
                 {
+                    _readCallCount++;
+                    _totalPacketsRead += count;
+
+                    if (_readCallCount % 1000 == 0)
+                    {
+                        double elapsed = sw.Elapsed.TotalSeconds;
+                        _logWriter?.WriteLine($"[{elapsed:F2}s] Reads: {_readCallCount}, Packets: {_totalPacketsRead}, Avg: {(double)_totalPacketsRead / _readCallCount:F2}, Rate: {_totalPacketsRead / elapsed:F0} pkt/s");
+                    }
+
+                    if (count == 0)
+                    {
+                        Thread.Sleep(1); // Данных нет - подожди
+                        continue;
+                    }
+
                     for (int i = 0; i < count; i++)
                     {
                         var packet = buffer[i];
 
-                        // Проверяем Mouse4 для временного отключения
+                        // Mouse5 для временного отключения
                         if ((packet.ButtonFlags & MOUSE_BUTTON_5_DOWN) != 0)
                         {
                             if (!mouse5Pressed)
                             {
                                 mouse5Pressed = true;
                                 MouHid_SetBlocking(_mouHidHandle, false);
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] Mouse5 pressed - unblocking");
                             }
                         }
                         else if ((packet.ButtonFlags & MOUSE_BUTTON_5_UP) != 0)
@@ -251,53 +259,51 @@ namespace MapperGangNET8.Services.InputCaptureService
                             if (mouse5Pressed)
                             {
                                 mouse5Pressed = false;
-                                System.Diagnostics.Debug.WriteLine("[MOUHID] Mouse4 released - blocking again");
                                 MouHid_SetBlocking(_mouHidHandle, true);
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] Mouse5 released - blocking again");
                             }
                         }
                         if (!mouse5Pressed)
                         {
                             if ((packet.ButtonFlags & MOUSE_LEFT_DOWN) != 0)
                             {
-                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_LEFT_DOWN, true));
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs((int)InputButtons.LeftMouseDown, true));
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] LMB Down");
                             }
                             if ((packet.ButtonFlags & MOUSE_LEFT_UP) != 0)
                             {
-                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_LEFT_UP, false));
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs((int)InputButtons.LeftMouseUp, false));
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] LMB Up");
                             }
 
                             if ((packet.ButtonFlags & MOUSE_RIGHT_DOWN) != 0)
                             {
-                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_RIGHT_DOWN, true));
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs((int)InputButtons.RightMouseDown, true));
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] RMB Down");
                             }
                             if ((packet.ButtonFlags & MOUSE_RIGHT_UP) != 0)
                             {
-                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(INPUT_RIGHT_UP, false));
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs((int)InputButtons.RightMouseUp, false));
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] RMB Up");
                             }
 
                             if ((packet.ButtonFlags & MOUSE_MIDDLE_DOWN) != 0)
                             {
-                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(3, true));
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs((int)InputButtons.WheelMoveDown, true));
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] MMB Down");
                             }
                             if ((packet.ButtonFlags & MOUSE_MIDDLE_UP) != 0)
                             {
-                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs(3, false));
+                                MouseButtonEvent?.Invoke(this, new MouseButtonEventArgs((int)InputButtons.WheelMoveUp, false));
+                                System.Diagnostics.Debug.WriteLine("[MOUHID] MMB Up");
                             }
 
-                            // Передаем дельты движения
+                            // Дельты движения (только один раз!)
                             if (packet.DeltaX != 0 || packet.DeltaY != 0)
                             {
-                                MouseDeltaCaptured?.Invoke(this,
-                                    new MouseDeltaEventArgs(packet.DeltaX, packet.DeltaY));
+                                MouseDeltaCaptured?.Invoke(this, new MouseDeltaEventArgs(packet.DeltaX, packet.DeltaY));
+                                //System.Diagnostics.Debug.WriteLine($"[MOUHID] Delta: X={packet.DeltaX}, Y={packet.DeltaY}");
                             }
-                        }
-                    // Передаем дельты если не нажата Mouse4
-                    if (!mouse5Pressed && (packet.DeltaX != 0 || packet.DeltaY != 0))
-                        {
-                            MouseDeltaCaptured?.Invoke(this,
-                                new MouseDeltaEventArgs(packet.DeltaX, packet.DeltaY));
-
-                            System.Diagnostics.Debug.WriteLine($"[MOUHID] Delta: X={packet.DeltaX}, Y={packet.DeltaY}");
                         }
                     }
                 }
@@ -305,7 +311,9 @@ namespace MapperGangNET8.Services.InputCaptureService
                 {
                     Thread.Sleep(1);
                 }
+
             }
+            _logWriter?.WriteLine($"=== Capture stopped. Total: {_totalPacketsRead} packets in {sw.Elapsed.TotalSeconds:F2}s ===");
         }
 
         /// <summary>
