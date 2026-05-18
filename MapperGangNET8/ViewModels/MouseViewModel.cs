@@ -6,28 +6,37 @@ using System.Linq;
 using MapperGangNET8.Infrastructure.Commands;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ConfigService;
+using MapperGangNET8.Services.MappingService;
 
 namespace MapperGangNET8.ViewModels
 {
     public class MouseViewModel : ViewModelBase
     {
         private readonly IConfigService _configService;
+        private readonly InputPipeline _inputPipeline;
         private ConfigModel _currentConfig;
 
         #region Приватные поля
         private string _mouseJoystickMode;
         private double _mouseSensitivity;
+        private double _mouseSensitivityX;
+        private double _mouseSensitivityY;
         private bool _invertXAxis;
         private bool _invertYAxis;
-        private bool _mouseAcceleration;
+        private double _scaleFactorX;
+        private double _scaleFactorY;
         private double _mouseSmoothing;
-        private string _mouseWheelMapping;
+        private double _noiseFilter;
+        private int _returnTime;
+        private string _responseCurveType;
         private ObservableCollection<MouseButtonMapping> _buttonMappings;
         #endregion
 
         #region Публичные свойства
         /// <summary>
         /// Режим преобразования движения мыши в джойстик
+        /// Spring Mode = авто-возврат стика в центр
+        /// Absolute Position = накопление позиции без возврата
         /// </summary>
         public string MouseJoystickMode
         {
@@ -36,7 +45,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseJoystickMode, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.MouseSettings.MouseJoystickMode = value;
@@ -47,21 +55,19 @@ namespace MapperGangNET8.ViewModels
         }
         public ObservableCollection<string> AvailableJoystickModes { get; } =
         [
-        "Absolute Position",
-        "Relative Movement",
-        "Direct Input"
+        "Spring Mode",
+        "Absolute Position"
         ];
 
-        public ObservableCollection<string> AvailableWheelMappings { get; } =
+        public ObservableCollection<string> AvailableResponseCurves { get; } =
         [
-          "Right Stick Y-Axis",
-          "Triggers",
-          "D-Pad Up/Down",
-          "Not Mapped"
+          "Linear",
+          "Precision",
+          "Aggressive"
         ];
 
         /// <summary>
-        /// Чувствительность мыши (0-100%)
+        /// Чувствительность мыши (0-200%)
         /// </summary>
         public double MouseSensitivity
         {
@@ -74,6 +80,44 @@ namespace MapperGangNET8.ViewModels
                     if (_currentConfig != null)
                     {
                         _currentConfig.MouseSettings.MouseSensitivity = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Чувствительность мыши по оси X (0-200%)
+        /// </summary>
+        public double MouseSensitivityX
+        {
+            get => _mouseSensitivityX;
+            set
+            {
+                if (SetProperty(ref _mouseSensitivityX, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseSensitivityX = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Чувствительность мыши по оси Y (0-200%)
+        /// </summary>
+        public double MouseSensitivityY
+        {
+            get => _mouseSensitivityY;
+            set
+            {
+                if (SetProperty(ref _mouseSensitivityY, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.MouseSensitivityY = value;
                         _ = SaveSettingsAsync();
                     }
                 }
@@ -121,19 +165,18 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Включить ускорение мыши
+        /// Масштабный коэффициент по оси X (0-200%, 100% = 10000)
         /// </summary>
-        public bool MouseAcceleration
+        public double ScaleFactorX
         {
-            get => _mouseAcceleration;
+            get => _scaleFactorX;
             set
             {
-                if (SetProperty(ref _mouseAcceleration, value))
+                if (SetProperty(ref _scaleFactorX, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
-                        _currentConfig.MouseSettings.MouseAcceleration = value;
+                        _currentConfig.MouseSettings.ScaleFactorX = value;
                         _ = SaveSettingsAsync();
                     }
                 }
@@ -141,7 +184,26 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Сглаживание движений мыши (0-100%)
+        /// Масштабный коэффициент по оси Y (0-200%, 100% = 10000)
+        /// </summary>
+        public double ScaleFactorY
+        {
+            get => _scaleFactorY;
+            set
+            {
+                if (SetProperty(ref _scaleFactorY, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.ScaleFactorY = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сглаживание движений мыши (0-10)
         /// </summary>
         public double MouseSmoothing
         {
@@ -150,7 +212,6 @@ namespace MapperGangNET8.ViewModels
             {
                 if (SetProperty(ref _mouseSmoothing, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
                         _currentConfig.MouseSettings.MouseSmoothing = value;
@@ -161,19 +222,56 @@ namespace MapperGangNET8.ViewModels
         }
 
         /// <summary>
-        /// Маппинг колеса мыши
+        /// Фильтр шума (0-10, по умолчанию 0)
         /// </summary>
-        public string MouseWheelMapping
+        public double NoiseFilter
         {
-            get => _mouseWheelMapping;
+            get => _noiseFilter;
             set
             {
-                if (SetProperty(ref _mouseWheelMapping, value))
+                if (SetProperty(ref _noiseFilter, value))
                 {
-                    // Обновляем настройки в текущей конфигурации
                     if (_currentConfig != null)
                     {
-                        _currentConfig.MouseSettings.MouseWheelMapping = value;
+                        _currentConfig.MouseSettings.NoiseFilter = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Время авто-возврата в миллисекундах (5-255ms, по умолчанию 30ms)
+        /// </summary>
+        public int ReturnTime
+        {
+            get => _returnTime;
+            set
+            {
+                if (SetProperty(ref _returnTime, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.ReturnTime = value;
+                        _ = SaveSettingsAsync();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Тип кривой отклика (Linear, Precision, Aggressive)
+        /// </summary>
+        public string ResponseCurveType
+        {
+            get => _responseCurveType;
+            set
+            {
+                if (SetProperty(ref _responseCurveType, value))
+                {
+                    if (_currentConfig != null)
+                    {
+                        _currentConfig.MouseSettings.ResponseCurveType = value;
                         _ = SaveSettingsAsync();
                     }
                 }
@@ -220,14 +318,20 @@ namespace MapperGangNET8.ViewModels
         /// Команда добавления нового маппинга
         /// </summary>
         public ICommand AddMappingCommand { get; }
+
+        /// <summary>
+        /// Команда установки кривой отклика
+        /// </summary>
+        public ICommand SetResponseCurveCommand { get; }
         #endregion
 
         /// <summary>
         /// Конструктор MouseViewModel
         /// </summary>
-        public MouseViewModel(IConfigService configService)
+        public MouseViewModel(IConfigService configService, InputPipeline inputPipeline)
         {
             _configService = configService;
+            _inputPipeline = inputPipeline;
 
             ButtonMappings = new ObservableCollection<MouseButtonMapping>();
 
@@ -235,6 +339,7 @@ namespace MapperGangNET8.ViewModels
             SaveMappingsCommand = new RelayCommand(async _ => await OnSaveMappings());
             AddMappingCommand = new RelayCommand(_ => OnAddMapping());
             RemoveMappingCommand = new RelayCommand(OnRemoveMapping);
+            SetResponseCurveCommand = new RelayCommand(OnSetResponseCurve);
 
             _ = LoadSettingsAsync();
         }
@@ -274,11 +379,16 @@ namespace MapperGangNET8.ViewModels
 
             MouseJoystickMode = mouseSettings.MouseJoystickMode;
             MouseSensitivity = mouseSettings.MouseSensitivity;
+            MouseSensitivityX = mouseSettings.MouseSensitivityX;
+            MouseSensitivityY = mouseSettings.MouseSensitivityY;
             InvertXAxis = mouseSettings.InvertXAxis;
             InvertYAxis = mouseSettings.InvertYAxis;
-            MouseAcceleration = mouseSettings.MouseAcceleration;
+            ScaleFactorX = mouseSettings.ScaleFactorX;
+            ScaleFactorY = mouseSettings.ScaleFactorY;
             MouseSmoothing = mouseSettings.MouseSmoothing;
-            MouseWheelMapping = mouseSettings.MouseWheelMapping;
+            NoiseFilter = mouseSettings.NoiseFilter;
+            ReturnTime = mouseSettings.ReturnTime;
+            ResponseCurveType = mouseSettings.ResponseCurveType;
 
             ButtonMappings.Clear();
             foreach (var mapping in mouseSettings.ButtonMappings)
@@ -318,6 +428,17 @@ namespace MapperGangNET8.ViewModels
 
             System.Windows.MessageBox.Show("Настройки мыши сброшены к значениям по умолчанию.", "Сброс настроек",
                           System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+        }
+
+        /// <summary>
+        /// Установить кривую отклика
+        /// </summary>
+        private void OnSetResponseCurve(object parameter)
+        {
+            if (parameter is string curveType)
+            {
+                ResponseCurveType = curveType;
+            }
         }
 
         /// <summary>
@@ -404,6 +525,9 @@ namespace MapperGangNET8.ViewModels
 
             // Сохраняем конфигурацию
             await _configService.SaveConfigAsync(_currentConfig);
+
+            // Уведомляем InputPipeline об изменении конфигурации
+            await _inputPipeline.RefreshConfigurationAsync();
         }
     }
 

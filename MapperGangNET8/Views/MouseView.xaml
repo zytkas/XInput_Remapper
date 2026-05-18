@@ -1,130 +1,221 @@
 ﻿<UserControl x:Class="MapperGangNET8.Views.MouseView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:local="clr-namespace:MapperGangNET8.Views"
-             mc:Ignorable="d" 
+             xmlns:local="clr-namespace:MapperGangNET8.Views" xmlns:viewmodels="clr-namespace:MapperGangNET8.ViewModels" d:DataContext="{d:DesignInstance Type=viewmodels:MouseViewModel}"
+             mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="16">
-
             <StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                     <ui:SymbolIcon Symbol="KeyboardMouse16" Foreground="#2076FF" Margin="0,0,8,0"/>
                     <TextBlock Text="Mouse Settings" FontSize="16" FontWeight="SemiBold" Foreground="White"/>
                 </StackPanel>
-                <TextBlock Text="Configure how mouse inputs are mapped to the virtual controller" 
+                <TextBlock Text="Configure how mouse inputs are mapped to the virtual controller"
                           Foreground="#AAAAAA" Margin="0,0,0,8"/>
             </StackPanel>
 
+            <!-- Settings Cards Row -->
+            <Grid Margin="0,0,0,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
 
-            <ui:Card Background="#222222">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
-                        <TextBlock Text="Mouse to Joystick Mode" Margin="0,8"/>
-                        <ComboBox ItemsSource="{Binding AvailableJoystickModes}" 
-                          SelectedItem="{Binding MouseJoystickMode}"
-                          Margin="0,0,0,16" 
-                          HorizontalAlignment="Stretch"/>
-                        <TextBlock Text="How mouse movement translates to joystick position" 
-                                   FontSize="12" Foreground="#AAAAAA" Margin="0,0,0,16"/>
+                <!-- BASIC Card -->
+                <ui:Card Grid.Column="0" Background="#222222" Margin="0,0,4,0" VerticalAlignment="Stretch">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Mouse Sensitivity" Grid.Column="0" Margin="0,0,0,8"/>
-                            <TextBlock Text="{Binding MouseSensitivity, StringFormat={}{0:F0}%}" 
-                                       Grid.Column="1" Foreground="#2076FF" Margin="0,0,0,8"/>
-                        </Grid>
-                        <Slider Value="{Binding MouseSensitivity}" 
-                                Maximum="100" Minimum="0" Margin="0,0,0,16"/>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="BASIC" FontSize="14" FontWeight="SemiBold" Foreground="#2076FF" Margin="0,0,0,16"/>
 
-                        <Grid Margin="0,8,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Invert X-Axis" Grid.Column="0" VerticalAlignment="Center"/>
-                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding InvertXAxis}"/>
-                        </Grid>
+                            <!-- Mode -->
+                            <TextBlock Text="Mode" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <ComboBox ItemsSource="{Binding AvailableJoystickModes}"
+                                      SelectedItem="{Binding MouseJoystickMode}"
+                                      Margin="0,0,0,4"/>
+                            <TextBlock Text="Spring: Auto-return | Absolute: Stays"
+                                       FontSize="11" Foreground="#888888" Margin="0,0,0,16"/>
 
-                        <Grid Margin="0,8,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Text="Invert Y-Axis" Grid.Column="0" VerticalAlignment="Center"/>
-                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding InvertYAxis}"/>
-                        </Grid>
+                            <!-- Sensitivity -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Sensitivity" FontWeight="SemiBold" Grid.Column="0"/>
+                                <TextBlock Text="{Binding MouseSensitivity, StringFormat={}{0:F0}%}"
+                                           Grid.Column="1" Foreground="#2076FF"/>
+                            </Grid>
+                            <Slider Value="{Binding MouseSensitivity}"
+                                    Maximum="200" Minimum="0" Margin="0,0,0,16"/>
 
-                        <Grid Margin="0,8,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Mouse Acceleration" VerticalAlignment="Center"/>
-                                <TextBlock Text="Enable mouse acceleration for dynamic response" 
-                                           FontSize="12" Foreground="#AAAAAA"/>
-                            </StackPanel>
-                            <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding MouseAcceleration}"/>
-                        </Grid>
-                    </StackPanel>
+                            <!-- Invert Y -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Invert Y-Axis (FPS)" Grid.Column="0" VerticalAlignment="Center"/>
+                                <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding InvertYAxis}"/>
+                            </Grid>
+                        </StackPanel>
 
-                    <StackPanel Grid.Column="1" Margin="16,0,0,0">
-  
-                        <TextBlock Text="Response Curve" FontWeight="SemiBold" Margin="0,8,0,16"/>
-                        <Border Height="150" BorderBrush="#333333" BorderThickness="1" Margin="0,0,0,16">
-                            <Line X1="0" Y1="150" X2="300" Y2="0" Stroke="#2076FF" StrokeThickness="2"/>
-                        </Border>
+                        <!-- Spacer для пустого места внизу -->
+                        <Border Grid.Row="1"/>
+                    </Grid>
+                </ui:Card>
 
-                        <Grid Margin="0,0,0,16">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                <!-- TUNING Card -->
+                <ui:Card Grid.Column="1" Background="#222222" Margin="4,0,4,0" VerticalAlignment="Stretch">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
 
-                            <ui:Button Grid.Column="0" Content="Linear" HorizontalAlignment="Stretch" 
-                                        Appearance="Primary" Margin="0,0,4,0"/>
-                            <ui:Button Grid.Column="1" Content="S-Curve" HorizontalAlignment="Stretch" 
-                                        Appearance="Secondary" Margin="4,0,4,0"/>
-                            <ui:Button Grid.Column="2" Content="Custom" HorizontalAlignment="Stretch" 
-                                        Appearance="Secondary" Margin="4,0,0,0"/>
-                        </Grid>
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="TUNING" FontSize="14" FontWeight="SemiBold" Foreground="#2076FF" Margin="0,0,0,16"/>
 
-                        <TextBlock Text="Mouse Smoothing" Margin="0,8,0,8"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Slider Value="{Binding MouseSmoothing}" Maximum="100" Minimum="0" Grid.Column="0"/>
-                            <TextBlock Text="{Binding MouseSmoothing, StringFormat={}{0:F0}%}" 
-                                       Grid.Column="1" Foreground="#2076FF" Margin="8,0,0,0"/>
-                        </Grid>
-                        <TextBlock Text="Apply smoothing to mouse movements" 
-                                   FontSize="12" Foreground="#AAAAAA" Margin="0,4,0,16"/>
+                            <!-- Response Curve -->
+                            <TextBlock Text="Response Curve" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <Grid Margin="0,0,0,16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Mouse Wheel" Margin="0,8"/>
-                        <ComboBox ItemsSource="{Binding AvailableWheelMappings}"
-                          SelectedItem="{Binding MouseWheelMapping}" 
-                          Margin="0,0,0,16" 
-                          HorizontalAlignment="Stretch"/>
-                    </StackPanel>
-                </Grid>
-            </ui:Card>
+                                <ui:Button Grid.Column="0" Content="Linear" HorizontalAlignment="Stretch"
+                                           Command="{Binding SetResponseCurveCommand}"
+                                           CommandParameter="Linear"
+                                           Margin="0,0,2,0"/>
+                                <ui:Button Grid.Column="1" Content="Precision" HorizontalAlignment="Stretch"
+                                           Command="{Binding SetResponseCurveCommand}"
+                                           CommandParameter="Precision"
+                                           Margin="2,0,2,0"/>
+                                <ui:Button Grid.Column="2" Content="Aggressive" HorizontalAlignment="Stretch"
+                                           Command="{Binding SetResponseCurveCommand}"
+                                           CommandParameter="Aggressive"
+                                           Margin="2,0,0,0"/>
+                            </Grid>
 
+                            <!-- Smoothing -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Smoothing" FontWeight="SemiBold" Grid.Column="0"/>
+                                <TextBlock Text="{Binding MouseSmoothing, StringFormat={}{0:F1}}"
+                                           Grid.Column="1" Foreground="#2076FF"/>
+                            </Grid>
+                            <Slider Value="{Binding MouseSmoothing}" Maximum="10" Minimum="0" Margin="0,0,0,4"/>
+                            <TextBlock Text="0 = raw, 10 = max smoothing"
+                                       FontSize="11" Foreground="#888888" Margin="0,0,0,16"/>
+
+                            <!-- Return Speed -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Return Speed" FontWeight="SemiBold" Grid.Column="0"/>
+                                <TextBlock Text="{Binding ReturnTime, StringFormat={}{0}ms}"
+                                           Grid.Column="1" Foreground="#2076FF"/>
+                            </Grid>
+                            <Slider Value="{Binding ReturnTime}"
+                                    Maximum="255" Minimum="5" Margin="0,0,0,4"/>
+                            <TextBlock Text="Spring Mode auto-return time"
+                                       FontSize="11" Foreground="#888888" Margin="0,0,0,8"/>
+                        </StackPanel>
+
+                        <!-- Spacer для пустого места внизу -->
+                        <Border Grid.Row="1"/>
+                    </Grid>
+                </ui:Card>
+
+                <!-- EXPERT Card -->
+                <ui:Card Grid.Column="2" Background="#222222" Margin="4,0,0,0" VerticalAlignment="Stretch">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0">
+                            <TextBlock Text="EXPERT" FontSize="14" FontWeight="SemiBold" Foreground="#2076FF" Margin="0,0,0,16"/>
+
+                            <!-- DPI Scale X -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="DPI Scale X" FontWeight="SemiBold" Grid.Column="0"/>
+                                <TextBlock Text="{Binding ScaleFactorX, StringFormat={}{0:F0}%}"
+                                           Grid.Column="1" Foreground="#2076FF"/>
+                            </Grid>
+                            <Slider Value="{Binding ScaleFactorX}"
+                                    Maximum="200" Minimum="1" Margin="0,0,0,16"/>
+
+                            <!-- DPI Scale Y -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="DPI Scale Y" FontWeight="SemiBold" Grid.Column="0"/>
+                                <TextBlock Text="{Binding ScaleFactorY, StringFormat={}{0:F0}%}"
+                                           Grid.Column="1" Foreground="#2076FF"/>
+                            </Grid>
+                            <Slider Value="{Binding ScaleFactorY}"
+                                    Maximum="200" Minimum="1" Margin="0,0,0,16"/>
+
+                            <!-- Noise Cut -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Noise Cut" FontWeight="SemiBold" Grid.Column="0"/>
+                                <TextBlock Text="{Binding NoiseFilter, StringFormat={}{0:F1}}"
+                                           Grid.Column="1" Foreground="#2076FF"/>
+                            </Grid>
+                            <Slider Value="{Binding NoiseFilter}" Maximum="10" Minimum="0" Margin="0,0,0,4"/>
+                            <TextBlock Text="Filter sensor noise/jitter"
+                                       FontSize="11" Foreground="#888888" Margin="0,0,0,16"/>
+
+                            <!-- Invert X -->
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Invert X-Axis" Grid.Column="0" VerticalAlignment="Center"/>
+                                <ui:ToggleSwitch Grid.Column="1" IsChecked="{Binding InvertXAxis}"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <!-- Spacer для пустого места внизу -->
+                        <Border Grid.Row="1"/>
+                    </Grid>
+                </ui:Card>
+            </Grid>
+
+            <!-- BUTTON MAPPINGS - Full Width Card -->
             <ui:Card Background="#222222">
                 <StackPanel>
                     <Grid Margin="0,0,0,16">
@@ -133,7 +224,7 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Text="Mouse Button Mapping" FontSize="16" FontWeight="SemiBold" Grid.Column="0"/>
+                        <TextBlock Text="BUTTON MAPPINGS" FontSize="14" FontWeight="SemiBold" Foreground="#2076FF" Grid.Column="0"/>
                         <ui:Button Grid.Column="1" Appearance="Secondary" Command="{Binding AddMappingCommand}">
                             <StackPanel Orientation="Horizontal">
                                 <ui:SymbolIcon Symbol="Add24" Margin="0,0,4,0"/>
@@ -150,7 +241,7 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0" Text="Mouse Button" FontWeight="SemiBold"/>
-                        <TextBlock Grid.Column="1" Text="Controller Action" FontWeight="SemiBold"/>
+                        <TextBlock Grid.Column="1" Text="Controller Button" FontWeight="SemiBold"/>
                         <TextBlock Grid.Column="2" Text="Actions" FontWeight="SemiBold" HorizontalAlignment="Center"/>
                     </Grid>
 
@@ -164,27 +255,25 @@
                                         <ColumnDefinition Width="1*"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <ComboBox Grid.Column="0" 
-                          ItemsSource="{Binding DataContext.AvailableMouseButtons, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
-                          SelectedItem="{Binding MouseButton}" 
-                          Margin="0,0,8,0"/>
+                                    <ComboBox Grid.Column="0"
+                                              ItemsSource="{Binding DataContext.AvailableMouseButtons, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
+                                              SelectedItem="{Binding MouseButton}"
+                                              Margin="0,0,8,0"/>
 
-                                    <ComboBox Grid.Column="1" 
-                          ItemsSource="{Binding DataContext.AvailableControllerActions, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
-                          SelectedItem="{Binding ControllerButton}" 
-                          Margin="8,0"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding DataContext.AvailableControllerActions, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
+                                              SelectedItem="{Binding ControllerButton}"
+                                              Margin="8,0"/>
 
-                                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <ui:Button Appearance="Transparent" Padding="4" ToolTip="Advanced Settings">
-                                            <ui:SymbolIcon Symbol="Settings24" Foreground="#BBBBBB"/>
-                                        </ui:Button>
-                                        <ui:Button Appearance="Transparent" Padding="4" ToolTip="Remove Mapping"
-                       Command="{Binding DataContext.RemoveMappingCommand, 
-                                 RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
-                       CommandParameter="{Binding}">
-                                            <ui:SymbolIcon Symbol="Delete24" Foreground="#F44336"/>
-                                        </ui:Button>
-                                    </StackPanel>
+                                    <ui:Button Grid.Column="2"
+                                               Appearance="Transparent"
+                                               Padding="4"
+                                               ToolTip="Remove Mapping"
+                                               HorizontalAlignment="Center"
+                                               Command="{Binding DataContext.RemoveMappingCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type UserControl}}}"
+                                               CommandParameter="{Binding}">
+                                        <ui:SymbolIcon Symbol="Delete24" Foreground="#F44336" />
+                                    </ui:Button>
                                 </Grid>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -192,6 +281,7 @@
                 </StackPanel>
             </ui:Card>
 
+            <!-- Bottom action buttons -->
             <Grid Margin="0,8,0,16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -199,18 +289,18 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <ui:Button Grid.Column="0" 
-                               Command="{Binding ResetToDefaultsCommand}"
-                               Appearance="Secondary">
+                <ui:Button Grid.Column="0"
+                           Command="{Binding ResetToDefaultsCommand}"
+                           Appearance="Secondary">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="ArrowReset24" Margin="0,0,8,0"/>
                         <TextBlock Text="Reset to default" VerticalAlignment="Center"/>
                     </StackPanel>
                 </ui:Button>
 
-                <ui:Button Grid.Column="2" 
-                               Command="{Binding SaveMappingsCommand}"
-                               Appearance="Primary">
+                <ui:Button Grid.Column="2"
+                           Command="{Binding SaveMappingsCommand}"
+                           Appearance="Primary">
                     <StackPanel Orientation="Horizontal">
                         <ui:SymbolIcon Symbol="Save24" Margin="0,0,8,0"/>
                         <TextBlock Text="Save Settings" VerticalAlignment="Center"/>

@@ -1,462 +1,497 @@
-﻿using System.Collections.Generic;
+using System;
+using System.Diagnostics;
+using System.IO;
 using MapperGangNET8.Models;
 using MapperGangNET8.Services.ControllerService;
-using Input;
 
 namespace MapperGangNET8.Services.MappingService
 {
     /// <summary>
-    /// Maps mouse input to controller sticks and buttons - Step 7 implementation
+    /// Response curve point for stick deflection interpolation
+    /// </summary>
+    public struct ResponseCurvePoint
+    {
+        public float TravelDistance; // Input value (0-32767)
+        public float NewValue;        // Output value after curve (0-32767)
+
+        public ResponseCurvePoint(float travelDistance, float newValue)
+        {
+            TravelDistance = travelDistance;
+            NewValue = newValue;
+        }
+    }
+
+    /// <summary>
+    /// Mouse → Stick mapper based on reWASD algorithm
+    /// Two-stage processing: Delta Processing → Stick Processing
     /// </summary>
     public class MouseToStickMapper
     {
         private readonly IControllerService _controllerService;
-        private readonly Dictionary<InputButtons, ControllerButton> _mouseButtonMappings = new();
-        private readonly Dictionary<InputButtons, ControllerAxis> _mouseAxisMappings = new();
-        private readonly HashSet<InputButtons> _pressedMouseButtons = new(); // Track pressed mouse buttons
-        
-        // Mouse tracking
-        private int _lastMouseX;
-        private int _lastMouseY;
-        private bool _isFirstMouseEvent = true;
-        
-        // Right stick position accumulation (for camera control)
-        private double _rightStickX = 0.0;
-        private double _rightStickY = 0.0;
-        
-        // Stick behavior settings
-        private double _mouseSensitivity = 1.0;
-        private double _stickDecayRate = 0.85; // How fast stick returns to center (0.0 = instant, 1.0 = never)
-        private bool _enableStickDecay = true; // Whether stick should return to center when mouse stops
-        private long _lastMouseMoveTime = 0;
-        private const long STICK_DECAY_DELAY_MS = 100; // Wait before starting decay
-        
-        
+
+        // ==================== CONFIGURATION PARAMETERS ====================
+
+        // Sensitivity (0-27146, default 13573 = 100%)
+        private float _xSensitivity = 13573f;
+        private float _ySensitivity = 13573f;
+
+        // Scale factors (5-100000, default 30000 for high DPI direct input)
+        private float _scaleFactorX = 10000f;
+        private float _scaleFactorY = 10000f;
+
+        // Smoothing level (0-10, default 0 for precise micro-movements)
+        private uint _smoothing = 5;
+
+        // Noise filter level (0-10, default 0 for direct mouse input)
+        private uint _noiseFilter = 0;
+
+        // Spring mode (default true = virtual joystick with auto-return)
+        private bool _springMode = true;
+
+        // Auto-return time in milliseconds (default 20ms balanced)
+        private byte _returnTime = 30;
+
+        // Axis inversion
+        private bool _isXInvert = false;
+        private bool _isYInvert = true; // Y inverted by default for FPS
+
+        // Response curves (4 points each)
+        private ResponseCurvePoint[] _horizontalCurve;
+        private ResponseCurvePoint[] _verticalCurve;
+
+        // ==================== STATE VARIABLES ====================
+
+        // Target position (Spring Mode) or Accumulated position (Absolute Mode)
+        private float _targetX = 0f;
+        private float _targetY = 0f;
+
+        // Previous smoothed values for exponential smoothing
+        private float _previousSmoothX = 0f;
+        private float _previousSmoothY = 0f;
+
+        // Timing
+        private DateTime _lastDeltaTime = DateTime.Now;
+
+        // Debug logging
+        private System.IO.StreamWriter? _debugLog;
+        private readonly object _logLock = new object();
+
+        // ==================== CONSTANTS ====================
+
+        private const float DEFAULT_SENSITIVITY = 13573f;  // 100% (1.0x)
+        private const float MAX_SENSITIVITY = 27146f;      // 200% (2.0x)
+        private const float MIN_STICK_VALUE = -32767f;
+        private const float MAX_STICK_VALUE = 32767f;
 
         public MouseToStickMapper(IControllerService controllerService)
         {
             _controllerService = controllerService;
+
+            // Initialize default linear response curves
+            _horizontalCurve = new ResponseCurvePoint[]
+            {
+                new ResponseCurvePoint(0, 0),           // Dead zone
+                new ResponseCurvePoint(10922, 10922),   // 33%
+                new ResponseCurvePoint(21845, 21845),   // 66%
+                new ResponseCurvePoint(32767, 32767)    // 100%
+            };
+
+            _verticalCurve = new ResponseCurvePoint[]
+            {
+                new ResponseCurvePoint(0, 0),           // Dead zone
+                new ResponseCurvePoint(10922, 10922),   // 33%
+                new ResponseCurvePoint(21845, 21845),   // 66%
+                new ResponseCurvePoint(32767, 32767)    // 100%
+            };
         }
 
         /// <summary>
-        /// Update mouse mappings from configuration
+        /// Process raw mouse delta and update controller stick
+        /// Complete reWASD algorithm implementation
         /// </summary>
-        public void UpdateConfiguration(ConfigModel config)
+        public void ProcessMouseDelta(long deltaX, long deltaY)
         {
-            _mouseButtonMappings.Clear();
-            _mouseAxisMappings.Clear();
+            float deltaTimeMs = (float)(DateTime.Now - _lastDeltaTime).TotalMilliseconds;
+            _lastDeltaTime = DateTime.Now;
 
-            if (config?.MouseSettings?.ButtonMappings != null)
+            // ==================== STAGE 1: DELTA PROCESSING (PRE-ACCUMULATION) ====================
+
+            float dx = (float)deltaX;
+            float dy = (float)deltaY;
+
+            bool hasMovement = (dx != 0 || dy != 0);
+            if (hasMovement)
+                LogDebug($"[1] RAW: dx={dx:F1}, dy={dy:F1}");
+
+            // 1. Apply NoiseFilter (threshold deadband)
+            float noiseThreshold = _noiseFilter * 10.0f; // Estimated multiplier
+            if (Math.Abs(dx) < noiseThreshold) dx = 0;
+            if (Math.Abs(dy) < noiseThreshold) dy = 0;
+
+            // 2. Apply ScaleFactor BEFORE accumulation
+            dx *= _scaleFactorX / 1000.0f;  // 1500 → 1.5x
+            dy *= _scaleFactorY / 1000.0f;
+
+            // 3. Apply Sensitivity BEFORE accumulation
+            float sensitivityMultiplierX = _xSensitivity / DEFAULT_SENSITIVITY;
+            float sensitivityMultiplierY = _ySensitivity / DEFAULT_SENSITIVITY;
+            dx *= sensitivityMultiplierX;
+            dy *= sensitivityMultiplierY;
+
+            if (hasMovement)
+                LogDebug($"[2] SCALED: dx={dx:F2}, dy={dy:F2}");
+
+            // ==================== STAGE 2: POSITION CALCULATION & MODE LOGIC ====================
+
+            bool noMovement = (Math.Abs(dx) < 0.1f && Math.Abs(dy) < 0.1f);
+
+            if (_springMode)
             {
-                foreach (var mapping in config.MouseSettings.ButtonMappings)
+                // Spring Mode: Virtual joystick with auto-return
+                _targetX += dx;
+                _targetY += dy;
+
+                // Clamp to stick range
+                _targetX = Clamp(_targetX, MIN_STICK_VALUE, MAX_STICK_VALUE);
+                _targetY = Clamp(_targetY, MIN_STICK_VALUE, MAX_STICK_VALUE);
+
+                if (hasMovement)
+                    LogDebug($"[3] TARGET: x={_targetX:F2}, y={_targetY:F2}");
+
+                // Auto-return to center if no new movement
+                if (noMovement && deltaTimeMs > 0)
                 {
-                    InputButtons inputButton = GetInputMouseButtonFromString(mapping.MouseButton);
-                    string enumName = ConvertToEnumName(mapping.ControllerButton);
-                    
-                    System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Processing mapping - Mouse: {mapping.MouseButton} (InputButton: {inputButton}) -> Controller: {mapping.ControllerButton} (Enum: {enumName})");
-                    
-                    // Check what GetControllerAction returns
-                    var controllerAction = InputKeyMap.GetControllerAction(mapping.ControllerButton);
-                    System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: GetControllerAction(\"{mapping.ControllerButton}\") returned: {controllerAction}");
-                    
-                    if (inputButton != InputButtons.None)
-                    {
-                        // Check if this is a trigger (should be mapped to axis)
-                        if (enumName == "LeftTrigger")
-                        {
-                            _mouseAxisMappings[inputButton] = ControllerAxis.LeftTrigger;
-                            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Successfully mapped mouse button {inputButton} to left trigger axis");
-                        }
-                        else if (enumName == "RightTrigger")
-                        {
-                            _mouseAxisMappings[inputButton] = ControllerAxis.RightTrigger;
-                            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Successfully mapped mouse button {inputButton} to right trigger axis");
-                        }
-                        else if (System.Enum.TryParse<ControllerButton>(enumName, out var button))
-                        {
-                            _mouseButtonMappings[inputButton] = button;
-                            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Successfully mapped mouse button {inputButton} to controller button {button}");
-                        }
-                        else
-                        {
-                            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Failed to map - InputButton: {inputButton}, EnumName: {enumName}");
-                        }
-                    }
+                    // Smooth exponential decay
+                    float decayFactor = Math.Min(deltaTimeMs / _returnTime, 1.0f);
+
+                    _targetX *= (1.0f - decayFactor);
+                    _targetY *= (1.0f - decayFactor);
+
+                    // Snap to zero when very close (small threshold for micro precision)
+                    if (Math.Abs(_targetX) < 5.0f) _targetX = 0f;
+                    if (Math.Abs(_targetY) < 5.0f) _targetY = 0f;
                 }
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("MouseToStickMapper: No mouse button mappings found in config");
+                // Absolute Mode: Accumulate position permanently (no auto-return)
+                _targetX += dx;
+                _targetY += dy;
+
+                // Clamp to stick range
+                _targetX = Clamp(_targetX, MIN_STICK_VALUE, MAX_STICK_VALUE);
+                _targetY = Clamp(_targetY, MIN_STICK_VALUE, MAX_STICK_VALUE);
             }
 
-            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Total button mappings loaded: {_mouseButtonMappings.Count}, axis mappings: {_mouseAxisMappings.Count}");
+            // ==================== STAGE 3: RESPONSE CURVE APPLICATION ====================
 
-            // Update mouse settings from config
-            if (config?.SensitivitySettings != null)
+            float curvedX = ApplyCurve(_targetX, _horizontalCurve);
+            float curvedY = ApplyCurve(_targetY, _verticalCurve);
+
+            if (hasMovement)
+                LogDebug($"[4] CURVED: x={curvedX:F2}, y={curvedY:F2}");
+
+            // ==================== STAGE 4: FINAL PROCESSING ====================
+
+            // 1. Apply Smoothing (exponential smoothing)
+            float smoothX, smoothY;
+
+            if (_smoothing > 0)
             {
-                _mouseSensitivity = config.SensitivitySettings.MouseXAxisSensitivity / 100.0; // Convert percentage to decimal
-            }
-            
-            // Update mouse behavior settings
-            if (config?.MouseSettings != null)
-            {
-                // Check if we should enable stick decay (return to center)
-                // For now, enable by default with moderate decay rate
-                SetStickDecaySettings(true, 0.85);
-                
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Updated settings - Sensitivity: {_mouseSensitivity:F2}, Decay: {_enableStickDecay}, Rate: {_stickDecayRate:F2}");
-            }
-        }
+                float smoothingFactor = _smoothing / 10.0f;
+                smoothX = _previousSmoothX * smoothingFactor + curvedX * (1.0f - smoothingFactor);
+                smoothY = _previousSmoothY * smoothingFactor + curvedY * (1.0f - smoothingFactor);
 
-        /// <summary>
-        /// Process mouse input
-        /// </summary>
-        public void ProcessMouseInput(int x, int y, int button)
-        {
-            // Handle mouse movement
-            ProcessMouseMovement(x, y);
-            
-            // Handle mouse buttons
-            if (button != 0)
-            {
-                ProcessMouseButton(button);
-            }
-        }
-
-        /// <summary>
-        /// Process mouse delta movement directly (for blocked mouse input)
-        /// </summary>
-        public void ProcessMouseDelta(int deltaX, int deltaY)
-        {
-            System.Diagnostics.Debug.WriteLine($"[MOUSE DELTA] Input: deltaX={deltaX}, deltaY={deltaY}");
-
-            _lastMouseMoveTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-            if (deltaX != 0 || deltaY != 0)
-            {
-
-                // Apply sensitivity and scale
-                double moveX = (deltaX * _mouseSensitivity) / 50.0;
-                double moveY = -(deltaY * _mouseSensitivity) / 50.0;
-
-
-                // Accumulate movement to stick position
-                _rightStickX += moveX;
-                _rightStickY += moveY;
-
-                // Clamp accumulated position
-                _rightStickX = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickX));
-                _rightStickY = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickY));
-
-                System.Diagnostics.Debug.WriteLine($"[AFTER] Final stick: X={_rightStickX:F4}, Y={_rightStickY:F4}");
-
-                // Apply to controller
-                _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
-                _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
+                _previousSmoothX = smoothX;
+                _previousSmoothY = smoothY;
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine($"[NO MOVEMENT] Delta is zero");
-            }
-        }
-        /// <summary>
-        /// Process mouse movement and map to right stick
-        /// </summary>
-        private void ProcessMouseMovement(int x, int y)
-        {
-            // Skip first event to establish baseline
-            if (_isFirstMouseEvent)
-            {
-                _lastMouseX = x;
-                _lastMouseY = y;
-                _isFirstMouseEvent = false;
-                return;
+                smoothX = curvedX;
+                smoothY = curvedY;
             }
 
-            // Calculate movement delta
-            int deltaX = x - _lastMouseX;
-            int deltaY = y - _lastMouseY;
+            // 2. Apply inversion if enabled
+            if (_isXInvert) smoothX = -smoothX;
+            if (_isYInvert) smoothY = -smoothY;
 
-            // Update last position
-            _lastMouseX = x;
-            _lastMouseY = y;
-            
-            // Record time of mouse movement
-            _lastMouseMoveTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
+            if (hasMovement)
+                LogDebug($"[5] SMOOTH: x={smoothX:F2}, y={smoothY:F2}");
 
-            // Only process if there's actual movement
-            if (deltaX != 0 || deltaY != 0)
-            {
-                // Apply sensitivity and scale
-                double moveX = (deltaX * _mouseSensitivity) / 50.0; // Adjust scale for better feel
-                double moveY = -(deltaY * _mouseSensitivity) / 50.0; // Invert Y axis
+            // 3. Final range limiting
+            int finalX = (int)Clamp(smoothX, MIN_STICK_VALUE, MAX_STICK_VALUE);
+            int finalY = (int)Clamp(smoothY, MIN_STICK_VALUE, MAX_STICK_VALUE);
 
-                // Accumulate movement to stick position
-                _rightStickX += moveX;
-                _rightStickY += moveY;
+            // 4. Normalize to -1.0 to 1.0 range for controller service
+            double normalizedX = finalX / 32767.0;
+            double normalizedY = finalY / 32767.0;
 
-                // Clamp accumulated position to valid stick range [-1.0, 1.0]
-                _rightStickX = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickX));
-                _rightStickY = System.Math.Max(-1.0, System.Math.Min(1.0, _rightStickY));
+            if (hasMovement)
+                LogDebug($"[6] FINAL: x={finalX}, y={finalY} -> norm({normalizedX:F4}, {normalizedY:F4})\n");
 
-                // Apply to right stick (for camera/looking)
-                _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
-                _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
-                
-               // System.Diagnostics.Debug.WriteLine($"MouseToStick: Delta({deltaX},{deltaY}) -> Stick({_rightStickX:F3},{_rightStickY:F3})");
-            }
+            // 5. Output to virtual controller stick
+            _controllerService.SetAxis(ControllerAxis.RightThumbX, normalizedX);
+            _controllerService.SetAxis(ControllerAxis.RightThumbY, normalizedY);
         }
 
         /// <summary>
-        /// Process mouse button press/release using InputButtons enum
+        /// Update method for timer-based updates (120 FPS recommended)
+        /// Call this even when there's no mouse movement for auto-return
         /// </summary>
-        private void ProcessMouseButton(int button)
+        public void Update()
         {
-            // Skip if button is 0 (no button pressed)
-            if (button == 0) return;
-            
-            // Cast button code directly to InputButtons enum
-            if (!System.Enum.IsDefined(typeof(InputButtons), (byte)button))
-            {
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Unknown InputButtons code: {button}");
-                return;
-            }
-            
-            InputButtons inputButton = (InputButtons)(byte)button;
-            
-            // Skip mouse movement events
-            if (inputButton == InputButtons.Move)
-            {
-                return;
-            }
-            
-            // Determine if this is a press or release event based on InputButtons enum
-            bool isPressed = false;
-            InputButtons mappingKey = InputButtons.None;
-            
-            switch (inputButton)
-            {
-                case InputButtons.LeftMouseDown:
-                    isPressed = true;
-                    mappingKey = InputButtons.LeftMouseDown;
-                    break;
-                case InputButtons.LeftMouseUp:
-                    isPressed = false;
-                    mappingKey = InputButtons.LeftMouseDown; // Use down as mapping key for tracking
-                    break;
-                case InputButtons.RightMouseDown:
-                    isPressed = true;
-                    mappingKey = InputButtons.RightMouseDown;
-                    break;
-                case InputButtons.RightMouseUp:
-                    isPressed = false;
-                    mappingKey = InputButtons.RightMouseDown; // Use down as mapping key for tracking
-                    break;
-                case InputButtons.LeftDoubleClick:
-                    // Handle double click as press event
-                    isPressed = true;
-                    mappingKey = InputButtons.LeftDoubleClick;
-                    break;
-                case InputButtons.WheelUp:
-                case InputButtons.WheelDown:
-                case InputButtons.WheelMoveUp:
-                case InputButtons.WheelMoveDown:
-                    // Handle wheel events as momentary presses
-                    isPressed = true;
-                    mappingKey = inputButton;
-                    break;
-                default:
-                    System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Unhandled InputButtons: {inputButton}");
-                    return;
-            }
-            
-            string buttonName = inputButton.ToString();
+            // Process with zero deltas to handle auto-return
+            ProcessMouseDelta(0, 0);
+        }
 
-            System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: ProcessMouseButton - InputButton: {inputButton} ({buttonName}), MappingKey: {mappingKey}, Pressed: {isPressed}");
+        /// <summary>
+        /// Apply response curve interpolation to stick position
+        /// </summary>
+        private float ApplyCurve(float inputValue, ResponseCurvePoint[] curvePoints)
+        {
+            float absInput = Math.Abs(inputValue);
+            float sign = Math.Sign(inputValue);
 
-            // Track button state to avoid duplicate events (except for wheel events which are momentary)
-            if (inputButton != InputButtons.WheelUp && inputButton != InputButtons.WheelDown && 
-                inputButton != InputButtons.WheelMoveUp && inputButton != InputButtons.WheelMoveDown)
+            // Find curve segment for linear interpolation
+            for (int i = 0; i < curvePoints.Length - 1; i++)
             {
-                if (isPressed)
+                if (absInput >= curvePoints[i].TravelDistance &&
+                    absInput <= curvePoints[i + 1].TravelDistance)
                 {
-                    if (_pressedMouseButtons.Contains(mappingKey))
-                    {
-                        System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Button {mappingKey} already pressed, ignoring repeat event");
-                        return;
-                    }
-                    _pressedMouseButtons.Add(mappingKey);
-                }
-                else
-                {
-                    if (!_pressedMouseButtons.Contains(mappingKey))
-                    {
-                        System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Button {mappingKey} not in pressed state, ignoring release event");
-                        return;
-                    }
-                    _pressedMouseButtons.Remove(mappingKey);
+                    float t1 = curvePoints[i].TravelDistance;
+                    float t2 = curvePoints[i + 1].TravelDistance;
+                    float v1 = curvePoints[i].NewValue;
+                    float v2 = curvePoints[i + 1].NewValue;
+
+                    // Linear interpolation
+                    float factor = (t2 - t1) > 0 ? (absInput - t1) / (t2 - t1) : 0;
+                    float output = v1 + (v2 - v1) * factor;
+
+                    return output * sign; // Preserve direction
                 }
             }
 
-            // Check if mouse button is mapped to a controller button
-            if (_mouseButtonMappings.TryGetValue(mappingKey, out var controllerButton))
-            {
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {mappingKey} ({buttonName}) mapped to controller button {controllerButton} - setting to {isPressed}");
-                _controllerService.SetButton(controllerButton, isPressed);
-                
-                // For wheel events, immediately release after pressing
-                if (inputButton == InputButtons.WheelUp || inputButton == InputButtons.WheelDown || 
-                    inputButton == InputButtons.WheelMoveUp || inputButton == InputButtons.WheelMoveDown)
-                {
-                    System.Threading.Tasks.Task.Delay(50).ContinueWith(_ => 
-                    {
-                        _controllerService.SetButton(controllerButton, false);
-                        System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Released wheel button {controllerButton}");
-                    });
-                }
-            }
-            // Check if mouse button is mapped to a controller axis (like triggers)
-            else if (_mouseAxisMappings.TryGetValue(mappingKey, out var controllerAxis))
-            {
-                double axisValue = isPressed ? 1.0 : 0.0; // Full press for digital mouse button
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {mappingKey} ({buttonName}) mapped to controller axis {controllerAxis} - setting to {axisValue}");
-                _controllerService.SetAxis(controllerAxis, axisValue);
-                
-                // For wheel events, immediately release after pressing
-                if (inputButton == InputButtons.WheelUp || inputButton == InputButtons.WheelDown || 
-                    inputButton == InputButtons.WheelMoveUp || inputButton == InputButtons.WheelMoveDown)
-                {
-                    System.Threading.Tasks.Task.Delay(50).ContinueWith(_ => 
-                    {
-                        _controllerService.SetAxis(controllerAxis, 0.0);
-                        System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Released wheel axis {controllerAxis}");
-                    });
-                }
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"MouseToStickMapper: Mouse button {mappingKey} ({buttonName}) not mapped to any controller input");
-            }
+            // If beyond curve range, return maximum
+            return curvePoints[curvePoints.Length - 1].NewValue * sign;
         }
 
-        /// <summary>
-        /// Convert mouse button string to InputButtons enum
-        /// </summary>
-        private InputButtons GetInputMouseButtonFromString(string buttonString)
+        private float Clamp(float value, float min, float max)
         {
-            return InputKeyMap.GetInputMouseButton(buttonString);
+            return Math.Max(min, Math.Min(max, value));
         }
 
         /// <summary>
-        /// Get mouse button name from InputButtons enum for debugging
-        /// </summary>
-        private string GetMouseButtonName(InputButtons inputButton)
-        {
-            return InputKeyMap.GetMouseButtonName(inputButton);
-        }
-
-        /// <summary>
-        /// Convert UI controller button names to enum names
-        /// </summary>
-        private string ConvertToEnumName(string input)
-        {
-            if (string.IsNullOrEmpty(input)) return "";
-            
-            var action = InputKeyMap.GetControllerAction(input);
-            if (action.HasValue)
-            {
-                return action.Value switch
-                {
-                    ControllerButton.A => "A",
-                    ControllerButton.B => "B",
-                    ControllerButton.X => "X",
-                    ControllerButton.Y => "Y",
-                    ControllerButton.LeftShoulder => "LeftShoulder",
-                    ControllerButton.RightShoulder => "RightShoulder",
-                    ControllerButton.LeftTrigger => "LeftTrigger",
-                    ControllerButton.RightTrigger => "RightTrigger",
-                    ControllerButton.LeftThumb => "LeftThumb",
-                    ControllerButton.RightThumb => "RightThumb",
-                    ControllerButton.DPadUp => "DPadUp",
-                    ControllerButton.DPadDown => "DPadDown",
-                    ControllerButton.DPadLeft => "DPadLeft",
-                    ControllerButton.DPadRight => "DPadRight",
-                    ControllerButton.Start => "Start",
-                    ControllerButton.Back => "Back",
-                    ControllerButton.Guide => "Guide",
-                    _ => action.Value.ToString()
-                };
-            }
-            
-            return input.Replace(" ", "");
-        }
-
-        /// <summary>
-        /// Update stick decay (should be called regularly, e.g. on a timer)
-        /// </summary>
-        public void UpdateStickDecay()
-        {
-            if (!_enableStickDecay)
-            {
-                System.Diagnostics.Debug.WriteLine($"[DECAY] Disabled");
-                return;
-            }
-
-            long currentTime = System.DateTimeOffset.Now.ToUnixTimeMilliseconds();
-            long timeSinceMove = currentTime - _lastMouseMoveTime;
-
-            // Only start decay if mouse hasn't moved recently
-            if (timeSinceMove > STICK_DECAY_DELAY_MS)
-            {
-                double oldX = _rightStickX;
-                double oldY = _rightStickY;
-
-                // Apply decay
-                _rightStickX *= _stickDecayRate;
-                _rightStickY *= _stickDecayRate;
-
-                // Snap to zero if very close
-                if (System.Math.Abs(_rightStickX) < 0.01) _rightStickX = 0.0;
-                if (System.Math.Abs(_rightStickY) < 0.01) _rightStickY = 0.0;
-
-                System.Diagnostics.Debug.WriteLine($"[DECAY] Time since move: {timeSinceMove}ms, Rate: {_stickDecayRate:F2}");
-                System.Diagnostics.Debug.WriteLine($"[DECAY] From ({oldX:F4},{oldY:F4}) -> ({_rightStickX:F4},{_rightStickY:F4})");
-
-                // Update controller
-                _controllerService.SetAxis(ControllerAxis.RightThumbX, _rightStickX);
-                _controllerService.SetAxis(ControllerAxis.RightThumbY, _rightStickY);
-            }
-            else
-            {
-                System.Diagnostics.Debug.WriteLine($"[DECAY] Waiting... {timeSinceMove}ms < {STICK_DECAY_DELAY_MS}ms");
-            }
-        }
-        
-        /// <summary>
-        /// Set stick decay settings
-        /// </summary>
-        public void SetStickDecaySettings(bool enabled, double decayRate = 0.85)
-        {
-            _enableStickDecay = enabled;
-            _stickDecayRate = System.Math.Max(0.0, System.Math.Min(1.0, decayRate));
-        }
-        
-        /// <summary>
-        /// Reset mouse tracking state
+        /// Reset all state to center position
         /// </summary>
         public void Reset()
         {
-            _isFirstMouseEvent = true;
-            _lastMouseX = 0;
-            _lastMouseY = 0;
-            _rightStickX = 0.0;
-            _rightStickY = 0.0;
-            _lastMouseMoveTime = 0;
-            _pressedMouseButtons.Clear();
-            
-            // Reset controller stick to center
-            _controllerService.SetAxis(ControllerAxis.RightThumbX, 0.0);
-            _controllerService.SetAxis(ControllerAxis.RightThumbY, 0.0);
+            _targetX = 0f;
+            _targetY = 0f;
+            _previousSmoothX = 0f;
+            _previousSmoothY = 0f;
+            _lastDeltaTime = DateTime.Now;
+
+            _controllerService.SetAxis(ControllerAxis.RightThumbX, 0);
+            _controllerService.SetAxis(ControllerAxis.RightThumbY, 0);
+        }
+
+        // ==================== CONFIGURATION METHODS ====================
+
+        /// <summary>
+        /// Set sensitivity (0-27146, default 13573 = 100%)
+        /// </summary>
+        public void SetSensitivity(float x, float y)
+        {
+            _xSensitivity = Clamp(x, 0, MAX_SENSITIVITY);
+            _ySensitivity = Clamp(y, 0, MAX_SENSITIVITY);
+        }
+
+        /// <summary>
+        /// Set sensitivity from percentage (0-200%)
+        /// </summary>
+        public void SetSensitivityPercent(float xPercent, float yPercent)
+        {
+            _xSensitivity = (xPercent / 100.0f) * DEFAULT_SENSITIVITY;
+            _ySensitivity = (yPercent / 100.0f) * DEFAULT_SENSITIVITY;
+        }
+
+        /// <summary>
+        /// Set scale factors (5-100000, default 30000 for high DPI direct input)
+        /// </summary>
+        public void SetScaleFactor(float x, float y)
+        {
+            _scaleFactorX = Clamp(x, 5, 100000);
+            _scaleFactorY = Clamp(y, 5, 100000);
+        }
+
+        /// <summary>
+        /// Set smoothing level (0-10, default 3)
+        /// </summary>
+        public void SetSmoothing(uint smoothing)
+        {
+            _smoothing = Math.Min(smoothing, 10);
+        }
+
+        /// <summary>
+        /// Set noise filter level (0-10, default 3)
+        /// </summary>
+        public void SetNoiseFilter(uint noiseFilter)
+        {
+            _noiseFilter = Math.Min(noiseFilter, 10);
+        }
+
+        /// <summary>
+        /// Set spring mode (true = virtual joystick with auto-return, false = absolute positioning)
+        /// </summary>
+        public void SetSpringMode(bool enabled)
+        {
+            _springMode = enabled;
+        }
+
+        /// <summary>
+        /// Set auto-return time in milliseconds (default 30ms)
+        /// </summary>
+        public void SetReturnTime(byte milliseconds)
+        {
+            _returnTime = milliseconds;
+        }
+
+        /// <summary>
+        /// Set axis inversion
+        /// </summary>
+        public void SetInversion(bool xInvert, bool yInvert)
+        {
+            _isXInvert = xInvert;
+            _isYInvert = yInvert;
+        }
+
+        /// <summary>
+        /// Set custom response curve for horizontal axis
+        /// </summary>
+        public void SetHorizontalCurve(ResponseCurvePoint[] curve)
+        {
+            if (curve.Length >= 4)
+                _horizontalCurve = curve;
+        }
+
+        /// <summary>
+        /// Set custom response curve for vertical axis
+        /// </summary>
+        public void SetVerticalCurve(ResponseCurvePoint[] curve)
+        {
+            if (curve.Length >= 4)
+                _verticalCurve = curve;
+        }
+
+        /// <summary>
+        /// Set precision curve preset (slower movement in low deflection zones)
+        /// </summary>
+        public void SetPrecisionCurve()
+        {
+            _horizontalCurve = new ResponseCurvePoint[]
+            {
+                new ResponseCurvePoint(0, 0),
+                new ResponseCurvePoint(16384, 8192),    // 50% input → 25% output
+                new ResponseCurvePoint(24576, 20480),   // 75% input → 62% output
+                new ResponseCurvePoint(32767, 32767)
+            };
+
+            _verticalCurve = (ResponseCurvePoint[])_horizontalCurve.Clone();
+        }
+
+        /// <summary>
+        /// Set aggressive curve preset (faster movement in low deflection zones)
+        /// </summary>
+        public void SetAggressiveCurve()
+        {
+            _horizontalCurve = new ResponseCurvePoint[]
+            {
+                new ResponseCurvePoint(0, 0),
+                new ResponseCurvePoint(8192, 16384),    // 25% input → 50% output
+                new ResponseCurvePoint(20480, 28672),   // 62% input → 87% output
+                new ResponseCurvePoint(32767, 32767)
+            };
+
+            _verticalCurve = (ResponseCurvePoint[])_horizontalCurve.Clone();
+        }
+
+        /// <summary>
+        /// Reset to default linear curve
+        /// </summary>
+        public void SetLinearCurve()
+        {
+            _horizontalCurve = new ResponseCurvePoint[]
+            {
+                new ResponseCurvePoint(0, 0),
+                new ResponseCurvePoint(10922, 10922),
+                new ResponseCurvePoint(21845, 21845),
+                new ResponseCurvePoint(32767, 32767)
+            };
+
+            _verticalCurve = (ResponseCurvePoint[])_horizontalCurve.Clone();
+        }
+
+        // Legacy compatibility methods
+        [Obsolete("Use SetSensitivity or SetSensitivityPercent instead")]
+        public void SetCapFactor(int cap) { /* Deprecated */ }
+
+        [Obsolete("Use SetSmoothing instead")]
+        public void SetLerpSpeed(double speed) { /* Deprecated */ }
+
+        [Obsolete("Use Update() instead")]
+        public void UpdateStickDecay() => Update();
+
+        // ==================== DEBUG LOGGING ====================
+
+        /// <summary>
+        /// Enable detailed debug logging to file
+        /// </summary>
+        public void EnableDebugLog(string? filePath = null)
+        {
+            lock (_logLock)
+            {
+                if (_debugLog != null)
+                    return; // Already enabled
+
+                string path = filePath ?? Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop),
+                    $"MouseToStick_Debug_{DateTime.Now:yyyyMMdd_HHmmss}.txt"
+                );
+
+                _debugLog = new System.IO.StreamWriter(path, false) { AutoFlush = true };
+                _debugLog.WriteLine($"=== Mouse To Stick Debug Log ===");
+                _debugLog.WriteLine($"Started: {DateTime.Now}");
+                _debugLog.WriteLine($"Settings: ScaleFactor={_scaleFactorX}, Sens={_xSensitivity}, Smooth={_smoothing}, Spring={_springMode}");
+                _debugLog.WriteLine($"===================================\n");
+            }
+        }
+
+        /// <summary>
+        /// Disable debug logging
+        /// </summary>
+        public void DisableDebugLog()
+        {
+            lock (_logLock)
+            {
+                if (_debugLog != null)
+                {
+                    _debugLog.WriteLine($"\n=== Log ended: {DateTime.Now} ===");
+                    _debugLog.Close();
+                    _debugLog.Dispose();
+                    _debugLog = null;
+                }
+            }
+        }
+
+        private void LogDebug(string message)
+        {
+            if (_debugLog != null)
+            {
+                lock (_logLock)
+                {
+                    _debugLog?.WriteLine(message);
+                }
+            }
         }
     }
 }

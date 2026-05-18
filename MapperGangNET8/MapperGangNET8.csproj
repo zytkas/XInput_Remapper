@@ -9,9 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services-old\**" />
     <Compile Remove="Services\SensitivityService\**" />
+    <EmbeddedResource Remove="Services-old\**" />
     <EmbeddedResource Remove="Services\SensitivityService\**" />
+    <None Remove="Services-old\**" />
     <None Remove="Services\SensitivityService\**" />
+    <Page Remove="Services-old\**" />
     <Page Remove="Services\SensitivityService\**" />
   </ItemGroup>
 
