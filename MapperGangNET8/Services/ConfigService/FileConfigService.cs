@@ -56,7 +56,6 @@ namespace MapperGangNET8.Services.ConfigService
                 string json = await File.ReadAllTextAsync(_configFilePath);
                 ConfigModel config = JsonSerializer.Deserialize<ConfigModel>(json, _jsonOptions);
 
-                // Проверяем наличие активного профиля
                 if (config != null && !config.Profiles.ContainsKey(config.ActiveProfile))
                 {
                     config = await EnsureDefaultProfileExists(config);
@@ -178,7 +177,6 @@ namespace MapperGangNET8.Services.ConfigService
             {
                 Name = name,
                 Description = description,
-                // Копируем текущие настройки из активного профиля
                 MouseSettings = CloneMouseSettings(_cachedConfig.MouseSettings),
                 KeyboardSettings = CloneKeyboardSettings(_cachedConfig.KeyboardSettings),
                 SensitivitySettings = CloneSensitivitySettings(_cachedConfig.SensitivitySettings)
@@ -201,7 +199,6 @@ namespace MapperGangNET8.Services.ConfigService
 
             _cachedConfig.Profiles[name] = profile;
 
-            // Если обновляем активный профиль, обновляем и основные настройки
             if (_cachedConfig.ActiveProfile == name)
             {
                 _cachedConfig.MouseSettings = CloneMouseSettings(profile.MouseSettings);
@@ -295,13 +292,11 @@ namespace MapperGangNET8.Services.ConfigService
         {
             var config = new ConfigModel();
 
-            // Add default WASD movement settings
             config.KeyboardSettings.MovementUp = "W";
             config.KeyboardSettings.MovementLeft = "A";
             config.KeyboardSettings.MovementDown = "S";
             config.KeyboardSettings.MovementRight = "D";
 
-            // Создаем профиль по умолчанию
             ProfileModel defaultProfile = new ProfileModel
             {
                 Name = "Default",
@@ -317,7 +312,6 @@ namespace MapperGangNET8.Services.ConfigService
             return config;
         }
 
-        // Методы клонирования настроек
         private MouseSettingsModel CloneMouseSettings(MouseSettingsModel original)
         {
             var json = JsonSerializer.Serialize(original, _jsonOptions);

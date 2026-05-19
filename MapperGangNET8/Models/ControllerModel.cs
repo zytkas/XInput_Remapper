@@ -10,12 +10,7 @@ namespace MapperGangNET8.Models
         /// <summary>
         /// Xbox 360 Controller
         /// </summary>
-        Xbox360,
-
-        /// <summary>
-        /// DualShock 4 Controller
-        /// </summary>
-        DualShock4
+        Xbox360
     }
 
     /// <summary>
@@ -23,31 +18,20 @@ namespace MapperGangNET8.Models
     /// </summary>
     public enum ControllerButton
     {
-        // Face buttons
         A,
         B,
         X,
         Y,
-
-        // Shoulder buttons
         LeftShoulder,
         RightShoulder,
-
-        // Stick buttons
         LeftThumb,
         RightThumb,
-
-        // D-pad buttons
         DPadUp,
         DPadRight,
         DPadDown,
         DPadLeft,
-
-        // Trigger buttons (for digital trigger input)
         LeftTrigger,
         RightTrigger,
-
-        // Special buttons
         Start,
         Back,
         Guide
@@ -58,13 +42,10 @@ namespace MapperGangNET8.Models
     /// </summary>
     public enum ControllerAxis
     {
-        // Analog sticks
         LeftThumbX,
         LeftThumbY,
         RightThumbX,
         RightThumbY,
-
-        // Triggers
         LeftTrigger,
         RightTrigger
     }
@@ -75,10 +56,8 @@ namespace MapperGangNET8.Models
     [Serializable]
     public class ControllerState
     {
-        // Button states - bit field for efficient storage
         private UInt16 _buttons;
 
-        // Axis states
         public double LeftThumbX { get; set; }
         public double LeftThumbY { get; set; }
         public double RightThumbX { get; set; }

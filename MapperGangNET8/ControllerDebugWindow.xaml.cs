@@ -202,10 +202,8 @@ namespace MapperGangNET8.Views
 
         private void UpdateThumbstickState(ControllerAxis axis, double value)
         {
-            // Update the controller service
             _controllerService.SetAxis(axis, value);
-
-            // Update our local state
+            _controllerService.Submit();
             _currentState.SetAxis(axis, value);
         }
 
@@ -228,12 +226,7 @@ namespace MapperGangNET8.Views
 
         private async void ConnectController()
         {
-            // Get controller type from combo box
-           ControllerType controllerType = ControllerTypeComboBox.SelectedIndex == 0
-                ? ControllerType.Xbox360
-                : ControllerType.DualShock4;
-
-            // Get controller index from combo box (add 1 because index is 0-based)
+            ControllerType controllerType = ControllerType.Xbox360;
             int controllerIndex = ControllerIndexComboBox.SelectedIndex + 1;
 
             // Disable UI while connecting
@@ -308,31 +301,28 @@ namespace MapperGangNET8.Views
                 {
                     if (_testButtonPressed)
                     {
-                        // Button pressed
                         _currentlyTestedButton = controllerButton;
                         WriteLog($"Test Button {buttonTag} pressed");
                         _controllerService.SetButton(controllerButton, true);
+                        _controllerService.Submit();
 
-                        // Highlight the button in UI
                         string originalContent = button.Content.ToString();
                         button.Content = $"{originalContent}";
 
-                        // Add visual feedback to the button
                         if (button.Style == null)
                         {
                             button.Background = new SolidColorBrush(Color.FromRgb(0, 120, 215));
                             button.Foreground = Brushes.White;
                         }
 
-                        // Schedule button release after a short delay (for tactile feedback)
                         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300) };
                         timer.Tick += (s, args) => {
                             _testButtonPressed = false;
                             _controllerService.SetButton(controllerButton, false);
+                            _controllerService.Submit();
                             button.Content = originalContent;
                             WriteLog($"Test Button {buttonTag} released");
 
-                            // Reset button appearance
                             if (button.Style == null)
                             {
                                 button.ClearValue(Button.BackgroundProperty);
@@ -358,11 +348,13 @@ namespace MapperGangNET8.Views
                 if (triggerTag == "LeftTrigger")
                 {
                     _controllerService.SetAxis(ControllerAxis.LeftTrigger, value);
+                    _controllerService.Submit();
                     WriteLog($"Left Trigger value: {value:F2}");
                 }
                 else if (triggerTag == "RightTrigger")
                 {
                     _controllerService.SetAxis(ControllerAxis.RightTrigger, value);
+                    _controllerService.Submit();
                     WriteLog($"Right Trigger value: {value:F2}");
                 }
             }

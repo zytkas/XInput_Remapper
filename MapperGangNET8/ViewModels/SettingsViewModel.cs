@@ -342,7 +342,7 @@ namespace MapperGangNET8.ViewModels
             AvailableProfiles = new ObservableCollection<string> { "Default", "Game", "Office", "Custom" };
             AvailablePollingRates = new ObservableCollection<string> { "125 Hz", "250 Hz", "500 Hz", "1000 Hz" };
             AvailablePriorities = new ObservableCollection<string> { "Low", "Normal", "High", "RealTime" };
-            AvailableControllerTypes = new ObservableCollection<string> { "Xbox 360 Controller", "DualShock 4 Controller" };
+            AvailableControllerTypes = new ObservableCollection<string> { "Xbox 360 Controller" };
 
             ResetAllSettingsCommand = new RelayCommand(async _ => await OnResetAllSettings());
             SaveSettingsCommand = new RelayCommand(async _ => await OnSaveSettings());
