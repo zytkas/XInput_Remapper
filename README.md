@@ -2,16 +2,6 @@
 
 Keyboard-and-mouse to virtual-gamepad mapper for Windows. Plays controller-only games with KB/M by emulating an Xbox 360 pad: WASD drives the left stick, mouse movement drives the right stick, and keys/mouse buttons map to face buttons and triggers.
 
-## Stack
-
-- **.NET 8** WPF (`net8.0-windows`)
-- **WPF-UI 4** — Fluent UI styling
-- **CommunityToolkit.Mvvm** — `ObservableObject` / `RelayCommand`
-- **Microsoft.Extensions.DependencyInjection** — DI container wired in [Infrastructure/DI/ContainerConfig.cs](Infrastructure/DI/ContainerConfig.cs)
-- **Nefarius.ViGEm.Client** — virtual Xbox 360 pad over the [ViGEm Bus Driver](https://github.com/ViGEm/ViGEmBus)
-- **Soju06 Input** — low-level WH_KEYBOARD_LL hook
-- **MouHid.dll** (native, P/Invoke) — raw mouse capture and physical-mouse blocking
-
 ## Requirements
 
 - Windows 10/11
@@ -42,7 +32,7 @@ MapperGangNET8/
 
 Each service folder has its own `README.md` with details.
 
-## How it fits together
+## How it works together
 
 - **InputService** captures keyboard events; **InputCaptureService** captures and blocks the mouse.
 - Events flow into **MappingService** (`InputPipeline`), which delegates to:
@@ -65,3 +55,14 @@ Each service folder has its own `README.md` with details.
 
 - **Input Debug Window** — live dump of every key/mouse event going through the hook.
 - **Controller Debug Window** — manually drives the virtual pad (sticks, triggers, buttons) to verify the ViGEm connection independently of the mapping pipeline.
+
+## Stack
+
+- **.NET 8** WPF (`net8.0-windows`)
+- **WPF-UI 4** — Fluent UI styling
+- **CommunityToolkit.Mvvm** — `ObservableObject` / `RelayCommand`
+- **Microsoft.Extensions.DependencyInjection** — DI container wired in [Infrastructure/DI/ContainerConfig.cs](Infrastructure/DI/ContainerConfig.cs)
+- **Nefarius.ViGEm.Client** — virtual Xbox 360 pad over the [ViGEm Bus Driver](https://github.com/ViGEm/ViGEmBus)
+- **Soju06 Input** — low-level WH_KEYBOARD_LL hook
+- **MouHid.dll** (native, P/Invoke) — raw mouse capture and physical-mouse blocking
+
