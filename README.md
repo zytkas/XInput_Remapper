@@ -16,7 +16,7 @@ Keyboard-and-mouse to virtual-gamepad mapper for Windows. Plays controller-only 
 
 - Windows 10/11
 - [ViGEm Bus Driver](https://github.com/ViGEm/ViGEmBus) installed
-- `MouHid.dll` next to the executable
+- [MouHid.dll](https://github.com/zytkas/MouHid_POC) next to the executable
 - Application must be run **as administrator** (low-level hooks + driver IO)
 
 ## Project layout
