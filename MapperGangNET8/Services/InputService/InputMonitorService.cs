@@ -82,7 +82,6 @@ namespace MapperGangNET8.Services.InputService
             string timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
             _logBuilder.AppendLine($"[{timestamp}] {message}");
 
-            // Limit log size
             string[] lines = _logBuilder.ToString().Split(new[] { Environment.NewLine }, StringSplitOptions.None);
             if (lines.Length > _maxLogEntries + 1)
             {
@@ -125,12 +124,9 @@ namespace MapperGangNET8.Services.InputService
 
             if (disposing)
             {
-                // Unsubscribe from events
                 _inputService.KeyDown -= OnKeyDown;
                 _inputService.KeyUp -= OnKeyUp;
                 _inputService.MouseStateChanged -= OnMouseStateChanged;
-
-                // Stop timer
                 _updateTimer.Stop();
             }
 

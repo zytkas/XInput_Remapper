@@ -77,5 +77,11 @@ namespace MapperGangNET8.Services.ControllerService
         /// </summary>
         /// <returns>Current controller state</returns>
         ControllerState GetState();
+
+        /// <summary>
+        /// Flush pending state changes to the virtual controller.
+        /// SetButton/SetAxis no longer submit immediately — call this from the pipeline tick.
+        /// </summary>
+        void Submit();
     }
 }
