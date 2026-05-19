@@ -1,4 +1,4 @@
-# MapperGang
+# XInput Remapper (MapperGang)
 
 Keyboard-and-mouse to virtual-gamepad mapper for Windows. Plays controller-only games with KB/M by emulating an Xbox 360 pad: WASD drives the left stick, mouse movement drives the right stick, and keys/mouse buttons map to face buttons and triggers.
 
